@@ -57,6 +57,10 @@ void tm32_p6_3_Hi( void ){ Pin_3_Write(1); }
 void tm32_p6_3_Lo( void ){ Pin_3_Write(0); }
 void tm32_p6_4_Hi( void ){ Pin_4_Write(1); }
 void tm32_p6_4_Lo( void ){ Pin_4_Write(0); }
+uint8 tm32_p7_1( void ){ return Pin_5_Read();}
+uint8 tm32_p7_2( void ){ return Pin_6_Read();}
+uint8 tm32_p7_3( void ){ return Pin_7_Read();}
+uint8 tm32_p7_4( void ){ return Pin_8_Read();}
 
 //---------------------------------------------------------
 //			Initialize
