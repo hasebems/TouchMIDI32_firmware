@@ -18,7 +18,8 @@
 uint32_t	tm32_systemTimer;	//	500 means 1sec, 30,000 means 1min, 1,800,000 means 1hour, 
 								//	43,200,000 means 1day, 32bit can measure about 99days.
 								//	This value is incremented by interrupt, don't write.
-
+uint8		systemErr;
+								
 //	Internal Variables
 static uint32	oldSwState;
 static uint8_t	midiStatusByte;
@@ -26,24 +27,25 @@ static uint8_t	midiDataByte1;
 static uint8_t	uartMidiCount;
 
 //---------------------------------------------------------
-//			USB MIDI OUT ( Channel Message Only )
+//			MIDI OUT ( Channel Message Only )
+//---------------------------------------------------------
+void tm32_uartMidiOut( uint8 length, uint8* buf )
+{
+#if ( UART_MIDI_TX != UART_MIDI_TX_NO_USE )
+	int		i;
+	for ( i=0; i<length; i++ ){
+		MIDI_UART_PutChar( *(buf+i) );
+	}	
+#endif
+}
 //---------------------------------------------------------
 void tm32_usbMidiOut( uint8 length, uint8* buf )
 {
-	int	i;
-	uint8 err;
-	
 	if ( length >= 4 ){ return;}
-
-	err = USBMIDI_PutUsbMidiIn( length, (const uint8*)buf, 0);
-	if ( USBMIDI_TRUE == err ){
-		tm32_p6_2_Hi();
-	}
-	
-	for ( i=0; i<length; i++ ){
-		MIDI_UART_WriteTxData( *(buf+i) );
-		do { err = MIDI_UART_ReadTxStatus();} while(~err & MIDI_UART_TX_STS_COMPLETE );
-	}
+	systemErr = USBMIDI_PutUsbMidiIn( length, (const uint8*)buf, 0);
+#if ( UART_MIDI_TX == UART_MIDI_TX_SAME_AS_USBOUT )
+	tm32_uartMidiOut( length, buf );
+#endif
 }
 
 //---------------------------------------------------------
@@ -68,6 +70,8 @@ uint8 tm32_p7_4( void ){ return Pin_8_Read();}
 void tm32_initLib( void )
 {
 	tm32_systemTimer = 0;
+	systemErr = 0;
+	
 	oldSwState = 0;
 	midiStatusByte = 0;
 	midiDataByte1 = 0;
@@ -118,15 +122,17 @@ void tm32_rcvMidiOnUart( uint8_t dt )
 				case 0xc0:
 				case 0xd0:{
 					//	2byte code
+ #if ( USRT_MIDI_RX != UART_MIDI_RX_NOT_USE )
 					uint8_t	mdt[2];
 					mdt[0] = midiStatusByte;
 					mdt[1] = dt;
  #if ( UART_MIDI_RX	== UART_MIDI_RX_TO_USBOUT )
 					tm32_usbMidiOut( 2,mdt );
- #else
+ #elif ( UART_MIDI_RX == UART_MIDI_RX_TO_MAIN_APP )
 					tm32_rcvUart( 2,mdt );
  #endif
 					uartMidiCount = 0;
+ #endif
 					break;
 				}
 				default:{
@@ -140,6 +146,7 @@ void tm32_rcvMidiOnUart( uint8_t dt )
 			switch ( midiStatusByte & 0xf0 ){
 				case 0x80: case 0x90: case 0xa0: case 0xb0:
 				case 0xe0:{
+ #if ( USRT_MIDI_RX != UART_MIDI_RX_NOT_USE )
 					uint8_t mdt[3];
 					mdt[0] = midiStatusByte;
 					mdt[1] = midiDataByte1;
@@ -147,10 +154,11 @@ void tm32_rcvMidiOnUart( uint8_t dt )
 					//	3byte code
  #if ( UART_MIDI_RX	== UART_MIDI_RX_TO_USBOUT )
 					tm32_usbMidiOut( 3,mdt );
- #else
+ #elif ( UART_MIDI_RX == UART_MIDI_RX_TO_MAIN_APP )
 					tm32_rcvUart( 3,mdt );
  #endif
 					uartMidiCount = 0;
+ #endif
 					break;
 				}
 				default:{

@@ -59,6 +59,7 @@ int main(void)
 		tm32_loop();
 
 		/*	MIDI UART Rx Check	*/
+#if ( UART_MIDI_RX != UART_MIDI_NO_USE )
 		uint8 rxCount = MIDI_UART_GetRxBufferSize();
 		int i;
 		for ( i=0; i<rxCount; i++ ){
@@ -67,6 +68,7 @@ int main(void)
 			uint8_t mD = (uint8_t)(midiUartRx & 0x00ff);
 			tm32_rcvMidiOnUart(mD);
 		}
+#endif
 
 		/*	Button Type Touch Sensor */
 		if ( CapSense_NOT_BUSY == CapSense_IsBusy() ){

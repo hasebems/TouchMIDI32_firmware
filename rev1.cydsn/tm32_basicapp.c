@@ -46,6 +46,8 @@ static uint8	pcNumber;
 
 static int		debugCounter;
 
+//static const uint8 TOUCH_EVENT_TABLE[2][MAX_TOUCH_PADS][2];
+//static const uint8 VELCITY_TABLE[5];
 //---------------------------------------------------------
 //			Tables
 //---------------------------------------------------------
@@ -78,6 +80,7 @@ static const uint8 TOUCH_EVENT_TABLE[2][MAX_TOUCH_PADS][2] = {
 }
 };
 static const uint8 VELCITY_TABLE[5] = { 60, 80, 100, 114, 127 };
+
 //---------------------------------------------------------
 //			Initialize
 //---------------------------------------------------------
@@ -125,7 +128,7 @@ void tm32_loop( void )
 		ada88_writeNumber(dispValue);
 		prsValue = tempPrsValue;
 	}	
-//	ada88_writeNumber(debugCounter);
+	ada88_writeNumber(debugCounter);
 
 #endif
 	if ( mode == 0 ){

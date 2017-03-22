@@ -24,7 +24,8 @@ extern uint32_t	tm32_systemTimer;	//	500 means 1sec, 30,000 means 1min, 1,800,00
 //---------------------------------------------------------
 //			TouchMIDI32 Library Functions
 //---------------------------------------------------------
-extern void tm32_usbMidiOut( uint8 length, uint8* buf );	
+extern void tm32_uartMidiOut( uint8 length, uint8* buf );
+extern void tm32_usbMidiOut( uint8 length, uint8* buf );
 extern void tm32_p6_1_Hi( void );
 extern void tm32_p6_1_Lo( void );
 extern void tm32_p6_2_Hi( void );

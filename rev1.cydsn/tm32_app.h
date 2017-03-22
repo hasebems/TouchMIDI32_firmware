@@ -22,11 +22,14 @@ extern void tm32_rcvUart( int count, uint8_t* buf );
 //	configration
 //---------------
 //	UART MIDI Rx
+#define		UART_MIDI_RX_NO_USE			0	//	if you use UART Rx, should pull-up Rx.
 #define		UART_MIDI_RX_TO_USBOUT		1
 #define		UART_MIDI_RX_TO_MAIN_APP	2	//	inplement tm32_rcvUart()
-#define		UART_MIDI_RX				UART_MIDI_RX_TO_USBOUT
-
-
+#define		UART_MIDI_RX				UART_MIDI_RX_NO_USE
+//	UART MIDI Tx
+#define		UART_MIDI_TX_NO_USE			0
+#define		UART_MIDI_TX_SAME_AS_USBOUT	1
+#define		UART_MIDI_TX				UART_MIDI_TX_SAME_AS_USBOUT
 
 #endif
 /* [] END OF FILE */
