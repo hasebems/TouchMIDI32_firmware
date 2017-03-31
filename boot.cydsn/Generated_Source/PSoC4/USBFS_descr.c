@@ -41,11 +41,11 @@ const uint8 CYCODE USBFS_DEVICE0_DESCR[18u] = {
 /* bDeviceSubClass                         */ 0x00u,
 /* bDeviceProtocol                         */ 0x00u,
 /* bMaxPacketSize0                         */ 0x08u,
-/* idVendor                                */ 0xB4u, 0x04u,
-/* idProduct                               */ 0x1Du, 0xB7u,
+/* idVendor                                */ 0x09u, 0x12u,
+/* idProduct                               */ 0x90u, 0x36u,
 /* bcdDevice                               */ 0x01u, 0x30u,
-/* iManufacturer                           */ 0x01u,
-/* iProduct                                */ 0x03u,
+/* iManufacturer                           */ 0x04u,
+/* iProduct                                */ 0x05u,
 /* iSerialNumber                           */ 0x80u,
 /* bNumConfigurations                      */ 0x01u
 };
@@ -107,7 +107,7 @@ const uint8 CYCODE USBFS_DEVICE0_CONFIGURATION0_DESCR[41u] = {
 /*********************************************************************
 * String Descriptor Table
 *********************************************************************/
-const uint8 CYCODE USBFS_STRING_DESCRIPTORS[117u] = {
+const uint8 CYCODE USBFS_STRING_DESCRIPTORS[161u] = {
 /*********************************************************************
 * Language ID Descriptor
 *********************************************************************/
@@ -142,6 +142,21 @@ const uint8 CYCODE USBFS_STRING_DESCRIPTORS[117u] = {
  (uint8)' ', 0u,(uint8)'B', 0u,(uint8)'o', 0u,(uint8)'o', 0u,(uint8)'t', 0u,
  (uint8)'l', 0u,(uint8)'o', 0u,(uint8)'a', 0u,(uint8)'d', 0u,(uint8)'e', 0u,
  (uint8)'r', 0u,
+/*********************************************************************
+* String Descriptor: "Kigakudoh"
+*********************************************************************/
+/* Descriptor Length                       */ 0x14u,
+/* DescriptorType: STRING                  */ 0x03u,
+ (uint8)'K', 0u,(uint8)'i', 0u,(uint8)'g', 0u,(uint8)'a', 0u,(uint8)'k', 0u,
+ (uint8)'u', 0u,(uint8)'d', 0u,(uint8)'o', 0u,(uint8)'h', 0u,
+/*********************************************************************
+* String Descriptor: "TouchMIDI32"
+*********************************************************************/
+/* Descriptor Length                       */ 0x18u,
+/* DescriptorType: STRING                  */ 0x03u,
+ (uint8)'T', 0u,(uint8)'o', 0u,(uint8)'u', 0u,(uint8)'c', 0u,(uint8)'h', 0u,
+ (uint8)'M', 0u,(uint8)'I', 0u,(uint8)'D', 0u,(uint8)'I', 0u,(uint8)'3', 0u,
+ (uint8)'2', 0u,
 /*********************************************************************/
 /* Marks the end of the list.              */ 0x00u};
 /*********************************************************************/

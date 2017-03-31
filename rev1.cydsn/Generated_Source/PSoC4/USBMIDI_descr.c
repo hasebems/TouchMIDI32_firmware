@@ -41,11 +41,11 @@ const uint8 CYCODE USBMIDI_DEVICE0_DESCR[18u] = {
 /* bDeviceSubClass                         */ 0x00u,
 /* bDeviceProtocol                         */ 0x00u,
 /* bMaxPacketSize0                         */ 0x08u,
-/* idVendor                                */ 0xB4u, 0x04u,
-/* idProduct                               */ 0x32u, 0xD2u,
+/* idVendor                                */ 0x09u, 0x12u,
+/* idProduct                               */ 0x90u, 0x36u,
 /* bcdDevice                               */ 0x01u, 0x00u,
-/* iManufacturer                           */ 0x01u,
-/* iProduct                                */ 0x02u,
+/* iManufacturer                           */ 0x07u,
+/* iProduct                                */ 0x08u,
 /* iSerialNumber                           */ 0x80u,
 /* bNumConfigurations                      */ 0x01u
 };
@@ -58,7 +58,7 @@ const uint8 CYCODE USBMIDI_DEVICE0_CONFIGURATION0_DESCR[101u] = {
 /*  wTotalLength                           */ 0x65u, 0x00u,
 /*  bNumInterfaces                         */ 0x02u,
 /*  bConfigurationValue                    */ 0x01u,
-/*  iConfiguration                         */ 0x01u,
+/*  iConfiguration                         */ 0x05u,
 /*  bmAttributes                           */ 0x80u,
 /*  bMaxPower                              */ 0x32u,
 /*********************************************************************
@@ -188,7 +188,7 @@ const uint8 CYCODE USBMIDI_DEVICE0_CONFIGURATION0_DESCR[101u] = {
 /*********************************************************************
 * String Descriptor Table
 *********************************************************************/
-const uint8 CYCODE USBMIDI_STRING_DESCRIPTORS[177u] = {
+const uint8 CYCODE USBMIDI_STRING_DESCRIPTORS[221u] = {
 /*********************************************************************
 * Language ID Descriptor
 *********************************************************************/
@@ -244,6 +244,21 @@ const uint8 CYCODE USBMIDI_STRING_DESCRIPTORS[177u] = {
 /* DescriptorType: STRING                  */ 0x03u,
  (uint8)'M', 0u,(uint8)'I', 0u,(uint8)'D', 0u,(uint8)'I', 0u,(uint8)' ', 0u,
  (uint8)'O', 0u,(uint8)'U', 0u,(uint8)'T', 0u,
+/*********************************************************************
+* String Descriptor: "Kigakudoh"
+*********************************************************************/
+/* Descriptor Length                       */ 0x14u,
+/* DescriptorType: STRING                  */ 0x03u,
+ (uint8)'K', 0u,(uint8)'i', 0u,(uint8)'g', 0u,(uint8)'a', 0u,(uint8)'k', 0u,
+ (uint8)'u', 0u,(uint8)'d', 0u,(uint8)'o', 0u,(uint8)'h', 0u,
+/*********************************************************************
+* String Descriptor: "TouchMIDI32"
+*********************************************************************/
+/* Descriptor Length                       */ 0x18u,
+/* DescriptorType: STRING                  */ 0x03u,
+ (uint8)'T', 0u,(uint8)'o', 0u,(uint8)'u', 0u,(uint8)'c', 0u,(uint8)'h', 0u,
+ (uint8)'M', 0u,(uint8)'I', 0u,(uint8)'D', 0u,(uint8)'I', 0u,(uint8)'3', 0u,
+ (uint8)'2', 0u,
 /*********************************************************************/
 /* Marks the end of the list.              */ 0x00u};
 /*********************************************************************/

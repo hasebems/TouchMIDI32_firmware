@@ -104,3 +104,10 @@ boot.cydsn/codegentemp/cytypes.h
 boot.cydsn/codegentemp/cyutils.c
 boot.cydsn/codegentemp/Pin_Input.c
 boot.cydsn/codegentemp/Pin_Input.h
+boot.cydsn/codegentemp/Pin_Input_aliases.h
+boot.cydsn/codegentemp/Pin_Input_PM.c
+boot.cydsn/codegentemp/project.h
+boot.cydsn/codegentemp/USBFS.c
+boot.cydsn/codegentemp/USBFS.h
+boot.cydsn/codegentemp/USBFS_audio.c
+boot.cydsn/codegentemp/USBFS_audio.h
