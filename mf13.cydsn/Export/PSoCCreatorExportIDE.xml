@@ -43,6 +43,7 @@
           <File BuildType="BUILD" Toolchain="">tm32_app.h</File>
           <File BuildType="BUILD" Toolchain="">tm32_analyse_pressure.h</File>
           <File BuildType="BUILD" Toolchain="">tm32_analyse_touch.h</File>
+          <File BuildType="BUILD" Toolchain="">tm32_i2cdev.h</File>
         </Files>
       </Folder>
       <Folder BuildType="STRICT" Path="C:\Users\Masahiko\Documents\PSoC Creator\TouchMIDI32_firmware\common">
@@ -50,7 +51,6 @@
           <File BuildType="BUILD" Toolchain="">..\common\main.c</File>
           <File BuildType="BUILD" Toolchain="">..\common\tm32_i2cdev.c</File>
           <File BuildType="BUILD" Toolchain="">..\common\tm32_lib.c</File>
-          <File BuildType="BUILD" Toolchain="">..\common\tm32_i2cdev.h</File>
           <File BuildType="BUILD" Toolchain="">..\common\tm32_lib.h</File>
         </Files>
       </Folder>

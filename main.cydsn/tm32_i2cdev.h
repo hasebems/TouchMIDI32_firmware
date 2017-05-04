@@ -17,11 +17,12 @@
 //---------------------------------------------------------
 //		I2C Device Configuration
 //---------------------------------------------------------
-#define		USE_ADA88
-#define		USE_LPS22HB
+//#define		USE_ADA88
+//#define		USE_LPS22HB
+//#define		USE_LPS25H
 //#define		USE_AQM1602XA
-#define		USE_ADXL345
-
+//#define		USE_ADXL345
+	
 //---------------------------------------------------------
 //			TouchMIDI32 External Functions
 //---------------------------------------------------------
@@ -35,6 +36,9 @@ extern void ada88_writeNumber( int num );
 
 extern void lps22hb_init( void );
 extern uint16 lps22hb_getPressure( void );
+
+extern void lps25h_init( void );
+extern uint16 lps25h_getPressure( void );
 
 extern void aqm1602xa_init( void );
 extern void aqm1602xa_setStringUpper( int locate, char* str, int strNum );

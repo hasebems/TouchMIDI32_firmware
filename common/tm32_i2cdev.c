@@ -16,6 +16,7 @@
 //---------------------------------------------------------
 int		tm32_i2cErrCode;
 
+
 //---------------------------------------------------------
 //		Initialize I2C Device
 //---------------------------------------------------------
@@ -25,6 +26,7 @@ void tm32_init_i2cDevice( void )
 	
 	ada88_init();
 	lps22hb_init();
+	lps25h_init();	
 	aqm1602xa_init();
 	adxl345_init(0);
 }
@@ -76,9 +78,9 @@ int read1byte_i2cDevice( uint16 adrs, uint8* wrBuf, uint8* rdData, uint32 wrCoun
 	return 0;
 }
 //---------------------------------------------------------
-//		Read 2byte I2C Device
+//		Read N byte I2C Device
 //---------------------------------------------------------
-int read2byte_i2cDevice( uint16 adrs, uint8* wrBuf, uint8* rdData, uint32 wrCount )
+int read_nbyte_i2cDevice( uint16 adrs, uint8* wrBuf, uint8* rdData, uint32 wrCount, uint32 rdCount )
 {
 	int 	i=0;	
 	uint8	err;
@@ -93,7 +95,7 @@ int read2byte_i2cDevice( uint16 adrs, uint8* wrBuf, uint8* rdData, uint32 wrCoun
 	} while (( err &  I2C_I2C_MSTAT_WR_CMPLT ) == 0 );
 
 	I2C_I2CMasterClearStatus();
-	I2C_I2CMasterReadBuf( adrs, rdData, 2, I2C_I2C_MODE_REPEAT_START );
+	I2C_I2CMasterReadBuf( adrs, rdData, rdCount, I2C_I2C_MODE_REPEAT_START );
 	do {
 		err = I2C_I2CMasterStatus();
 		if ( ++i > 1000 ){
@@ -294,6 +296,58 @@ void lps22hb_init( void ){}
 uint16 lps22hb_getPressure( void ){return 0;}
 #endif
 
+#ifdef USE_LPS25H
+//---------------------------------------------------------
+//		<< LPS25H >>
+//---------------------------------------------------------
+//uint8		lps22hbEnable;		//	0: disable 1-: enable
+//uint8 isLps22hbAvailable( void ){ return lps22hbEnable; }
+//---------------------------------------------------------
+#define		LPS25H_I2C_ADRS	0x5d
+//	for Pressure Sencer
+#define		PRES_SNCR_RESOLUTION		0x10
+#define		PRES_SNCR_PWRON				0x20
+#define		PRES_SNCR_START				0x21
+#define		PRES_SNCR_ONE_SHOT			0x01
+#define		PRES_SNCR_RCV_DT_FLG		0x27
+#define		PRES_SNCR_RCV_TMPR			0x01
+#define		PRES_SNCR_RCV_PRES			0x02
+#define		PRES_SNCR_DT_L				0x28
+#define		PRES_SNCR_DT_M				0x29
+#define		PRES_SNCR_DT_H				0x2a
+//-------------------------------------------------------------------------
+void lps25h_init( void )
+{
+	uint8	i2cBuf[2] = { 0 };
+	i2cBuf[0] = PRES_SNCR_PWRON;
+	i2cBuf[1] = 0xc0;
+	write_i2cDevice( LPS25H_I2C_ADRS, i2cBuf, 2 );	//	Power On
+}
+//-------------------------------------------------------------------------
+uint16 lps25h_getPressure( void )
+{
+	unsigned char	dt[3];
+	unsigned char adrs;
+	int		err;
+	uint16	retValue = 0;
+
+	adrs = PRES_SNCR_DT_L|0x80;
+	err = read_nbyte_i2cDevice( LPS25H_I2C_ADRS, &adrs, dt, 1, 3 );	
+
+	if ( !err ){
+		float tmpPrs = (float)(((unsigned long)dt[2]<<16)|((unsigned long)dt[1]<<8)|dt[0]);
+		tmpPrs = tmpPrs*10/4096;
+		retValue = (uint16)tmpPrs;
+	}
+
+	return retValue;
+}
+#else
+void lps25h_init( void ){}
+uint16 lps25h_getPressure( void ){ return 0; }
+#endif
+
+
 #ifdef USE_AQM1602XA
 //---------------------------------------------------------
 //		<< AQM1602XA >>		I2C freq. is less than 100[kHz]
@@ -427,7 +481,7 @@ int adxl345_getAccel( unsigned char chipnum, signed short* value )
 	if ( chipnum == 1 ){ i2cadrs = ADXL345_I2C_ADRS2; }
 
 	adrs = 0x32;
-	err = read2byte_i2cDevice( i2cadrs, &adrs, reg, 1 );
+	err = read_nbyte_i2cDevice( i2cadrs, &adrs, reg, 1, 2 );
 	if (!err){
 		tmp = reg[0];
 		tmp |= (unsigned short)reg[1] << 8;
@@ -436,7 +490,7 @@ int adxl345_getAccel( unsigned char chipnum, signed short* value )
 	else { return err;}
 
 	adrs = 0x34;
-	err = read2byte_i2cDevice( i2cadrs, &adrs, reg, 1 );
+	err = read_nbyte_i2cDevice( i2cadrs, &adrs, reg, 1, 2 );
 	if (!err){
 		tmp = reg[0];
 		tmp |= (unsigned short)reg[1] << 8;
@@ -445,7 +499,7 @@ int adxl345_getAccel( unsigned char chipnum, signed short* value )
 	else return err;
 
 	adrs = 0x36;
-	err = read2byte_i2cDevice( i2cadrs, &adrs, reg, 1 );
+	err = read_nbyte_i2cDevice( i2cadrs, &adrs, reg, 1, 2 );
 	if (!err){
 		tmp = reg[0];
 		tmp |= (unsigned short)reg[1] << 8;
@@ -458,7 +512,5 @@ int adxl345_getAccel( unsigned char chipnum, signed short* value )
 void adxl345_init( unsigned char chipnum ){}
 int adxl345_getAccel( unsigned char chipnum, signed short* value ){return 0;}
 #endif
-
-
 
 /* [] END OF FILE */
