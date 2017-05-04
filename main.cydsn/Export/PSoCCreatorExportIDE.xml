@@ -6,7 +6,7 @@
     <Toolchain Name="ARM GCC Generic" Selected="True">
       <Tool Name="prebuild" Command="" Options="" />
       <Tool Name="assembler" Command="arm-none-eabi-as.exe" Options="-mcpu=cortex-m0 -mthumb -I. -IGenerated_Source\PSoC4 -alh=${OutputDir}/${CompileFile}.lst -g -W" />
-      <Tool Name="compiler" Command="arm-none-eabi-gcc.exe" Options="-mcpu=cortex-m0 -mthumb -I. -IGenerated_Source\PSoC4 -Wa,-alh=${OutputDir}/${CompileFile}.lst -g -D NDEBUG -Wall -ffunction-sections -Os -ffat-lto-objects" />
+      <Tool Name="compiler" Command="arm-none-eabi-gcc.exe" Options="-mcpu=cortex-m0 -mthumb -I..\common -I. -IGenerated_Source\PSoC4 -Wa,-alh=${OutputDir}/${CompileFile}.lst -g -D NDEBUG -Wall -ffunction-sections -Os -ffat-lto-objects" />
       <Tool Name="linker" Command="arm-none-eabi-gcc.exe" Options="-mcpu=cortex-m0 -mthumb -g -ffunction-sections -Os -ffat-lto-objects -L Generated_Source\PSoC4 -Wl,-Map,${OutputDir}/${ProjectShortName}.map -T &quot;C:\Users\Masahiko\Documents\PSoC Creator\TouchMIDI32_firmware\main.cydsn\Generated_Source\PSoC4\cm0gcc.ld&quot; -specs=nano.specs -Wl,--gc-sections" />
       <Tool Name="postbuild" Command="" Options="" />
     </Toolchain>
@@ -36,14 +36,18 @@
     <Folders>
       <Folder BuildType="STRICT" Path="C:\Users\Masahiko\Documents\PSoC Creator\TouchMIDI32_firmware\main.cydsn">
         <Files Root="C:\Users\Masahiko\Documents\PSoC Creator\TouchMIDI32_firmware\main.cydsn">
-          <File BuildType="BUILD" Toolchain="">main.c</File>
-          <File BuildType="BUILD" Toolchain="">tm32_lib.c</File>
-          <File BuildType="BUILD" Toolchain="">tm32_i2cdev.c</File>
           <File BuildType="BUILD" Toolchain="">tm32_basicapp.c</File>
           <File BuildType="BUILD" Toolchain="">cyapicallbacks.h</File>
-          <File BuildType="BUILD" Toolchain="">tm32_lib.h</File>
-          <File BuildType="BUILD" Toolchain="">tm32_i2cdev.h</File>
           <File BuildType="BUILD" Toolchain="">tm32_app.h</File>
+        </Files>
+      </Folder>
+      <Folder BuildType="STRICT" Path="C:\Users\Masahiko\Documents\PSoC Creator\TouchMIDI32_firmware\common">
+        <Files Root="C:\Users\Masahiko\Documents\PSoC Creator\TouchMIDI32_firmware\main.cydsn">
+          <File BuildType="BUILD" Toolchain="">..\common\main.c</File>
+          <File BuildType="BUILD" Toolchain="">..\common\tm32_i2cdev.c</File>
+          <File BuildType="BUILD" Toolchain="">..\common\tm32_lib.c</File>
+          <File BuildType="BUILD" Toolchain="">..\common\tm32_i2cdev.h</File>
+          <File BuildType="BUILD" Toolchain="">..\common\tm32_lib.h</File>
         </Files>
       </Folder>
       <Folder BuildType="STRICT" Path="C:\Users\Masahiko\Documents\PSoC Creator\TouchMIDI32_firmware\main.cydsn\Generated_Source\PSoC4">
