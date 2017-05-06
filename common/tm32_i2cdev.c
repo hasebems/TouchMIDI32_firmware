@@ -323,7 +323,10 @@ void lps25h_init( void )
 	i2cBuf[1] = 0xc0;
 	write_i2cDevice( LPS25H_I2C_ADRS, i2cBuf, 2 );	//	Power On
 }
-//-------------------------------------------------------------------------
+//---------------------------------------------------------
+//		LPS25H Get Air Pressure
+//			return value means [hPa*10]
+//---------------------------------------------------------
 uint16 lps25h_getPressure( void )
 {
 	unsigned char	dt[3];
@@ -470,7 +473,7 @@ void adxl345_init( unsigned char chipnum )
 #endif
 }
 //-------------------------------------------------------------------------
-int adxl345_getAccel( unsigned char chipnum, signed short* value )
+void adxl345_getAccel( unsigned char chipnum, signed short* value )
 {
 	unsigned short tmp;
 	unsigned char reg[2];
@@ -487,7 +490,9 @@ int adxl345_getAccel( unsigned char chipnum, signed short* value )
 		tmp |= (unsigned short)reg[1] << 8;
 		*value = (signed short)tmp;
 	}
-	else { return err;}
+	else {
+		*value = 0;
+	}
 
 	adrs = 0x34;
 	err = read_nbyte_i2cDevice( i2cadrs, &adrs, reg, 1, 2 );
@@ -496,7 +501,9 @@ int adxl345_getAccel( unsigned char chipnum, signed short* value )
 		tmp |= (unsigned short)reg[1] << 8;
 		*(value+1) = (signed short)tmp;
 	}
-	else return err;
+	else {
+		*(value+1) = 0;
+	}
 
 	adrs = 0x36;
 	err = read_nbyte_i2cDevice( i2cadrs, &adrs, reg, 1, 2 );
@@ -505,8 +512,9 @@ int adxl345_getAccel( unsigned char chipnum, signed short* value )
 		tmp |= (unsigned short)reg[1] << 8;
 		*(value+2) = (signed short)tmp;
 	}
-
-	return err;
+	else {
+		*(value+2) = 0;
+	}
 }
 #else
 void adxl345_init( unsigned char chipnum ){}

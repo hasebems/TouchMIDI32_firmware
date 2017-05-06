@@ -49,6 +49,7 @@ static bool         nowPlaying;
 static bool			event10msec;
 static bool			event4msec;
 
+static uint8_t		ledPwmCounter;
 static uint32_t		counter10msec;
 static uint32_t		systemTimerStkFor10msec;
 static uint32_t		systemTimerStkFor4msec;
@@ -64,9 +65,13 @@ static uint16		tempPrsValue;
  //      Full Color LED by Interrupt
  //
  /*----------------------------------------------------------------------------*/
- const uint8_t tColorTable[13][3] = {
+//	PWM : Total 256count
+//	this interrupt is 250usec periodic.
+//	PWM interval : 16msec
+#define		PWM_INCREMENT_VALUE_PER_ONE_INT		4	//(256/(16000/250))
+const uint8_t tColorTable[13][3] = {
 
- 	//	this Value * midiExp(0-127) / 16 = 0x00-0xfe : PWM count value
+ 	//	this Value(0x00-0x20) * midiExp(0-127) / 16 = 0x00-0xfe : PWM count value
  	// R	 G		B
  	{ 0x20,  0x00,  0x00  },   //  red		C
  	{ 0x1a,  0x06,  0x00  },   //  red		C#
@@ -85,6 +90,7 @@ static uint16		tempPrsValue;
  //-------------------------------------------------------------------------
 void tm32_intrpt(void)
 {
+	//	display warning
 	if ( doremi == WARNING ){
 		tm32_p6_1_Lo();
 		if ( tm32_systemTimer & 0x0200 ){	//	500msec
@@ -92,20 +98,22 @@ void tm32_intrpt(void)
 		}
 	}
 
+	ledPwmCounter+=PWM_INCREMENT_VALUE_PER_ONE_INT;	
+	
     //	PWM Full Color LED
-    uint16_t ledCnt;
+    uint8_t ledCnt;
 	//Red
-    ledCnt = ((uint16_t)tColorTable[doremi][0]*midiExp)>>4;
-    if ((uint16_t)tm32_systemTimer >= ledCnt){tm32_p6_1_Hi();}
-	else									{tm32_p6_1_Lo();}
+    ledCnt = (tColorTable[doremi][0]*midiExp)>>4;
+    if (ledPwmCounter >= ledCnt){tm32_p6_1_Hi();}
+	else						{tm32_p6_1_Lo();}
 	//Green
-    ledCnt = ((uint16_t)tColorTable[doremi][1]*midiExp)>>4;
-    if ((uint16_t)tm32_systemTimer >= ledCnt){tm32_p6_2_Hi();}
-	else									{tm32_p6_2_Lo();}
+    ledCnt = (tColorTable[doremi][1]*midiExp)>>4;
+    if (ledPwmCounter >= ledCnt){tm32_p6_2_Hi();}
+	else						{tm32_p6_2_Lo();}
 	//Blue
-    ledCnt = ((uint16_t)tColorTable[doremi][2]*midiExp)>>4;
-    if ((uint16_t)tm32_systemTimer >= ledCnt){tm32_p6_3_Hi();}
-	else									{tm32_p6_3_Lo();}
+    ledCnt = (tColorTable[doremi][2]*midiExp)>>4;
+    if (ledPwmCounter >= ledCnt){tm32_p6_3_Hi();}
+	else						{tm32_p6_3_Lo();}
 }
 
 //---------------------------------------------------------
@@ -133,6 +141,7 @@ void tm32_init( void )
 	systemTimerStkFor10msec = tm32_systemTimer+40;
 	systemTimerStkFor4msec = tm32_systemTimer+16;
 	counter10msec = 0;
+	ledPwmCounter = 0;
 
 	touchCurrentStatus = 0;
 	tempPrsValue = 0;
@@ -188,12 +197,12 @@ static void touchSensor( void )
 /*----------------------------------------------------------------------------*/
 static void pressureSensor( void )
 {
-	uint16 prs = lps22hb_getPressure();
+	uint16 prs = lps25h_getPressure();
 
 	tempPrsValue = prs;		
  	if ( tempPrsValue != prsValue ){
-		int dispValue = tempPrsValue - 10000;
-		ada88_writeNumber(dispValue);
+//		int dispValue = tempPrsValue - 10000;
+//		ada88_writeNumber(dispValue);
 		prsValue = tempPrsValue;
 	}	
 	
@@ -227,7 +236,7 @@ static void pressureSensor( void )
 //	else {
 //		ada88_write(19);
 //	}
-//	ada88_writeNumber(midiExp);
+	ada88_writeNumber(midiExp);
 }
 /*----------------------------------------------------------------------------*/
 //
@@ -253,13 +262,9 @@ const uint8_t tCnvPrtDpt[MAX_ANGLE] = {
 static void acceleratorSensor( void )
 {
 	signed short acl[3] = { 0,0,0 };
-	int incli; 
-	int	err;
+	int incli;
 
-	err = adxl345_getAccel(0,acl);
-	if ( err != 0 ){
-//        i2cComErr = err + 40;
-    }
+	adxl345_getAccel(0,acl);
 //    if ( DIPSW1 == 1 ){ //  Ocarina
 //    	incli = -acl[1]/512;
 //    }
@@ -331,6 +336,11 @@ void tm32_loop( void )
 
     //  accelerator sensor
 	acceleratorSensor();
+
+	//	display warning
+	if ( tm32_i2cErrCode != 0 ){
+		doremi = WARNING;
+	}
 }
 //---------------------------------------------------------
 //			Touch On

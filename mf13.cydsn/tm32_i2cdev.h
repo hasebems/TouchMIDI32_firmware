@@ -18,7 +18,7 @@
 //		I2C Device Configuration
 //---------------------------------------------------------
 #define		USE_ADA88
-#define		USE_LPS22HB
+//#define		USE_LPS22HB
 #define		USE_LPS25H
 //#define		USE_AQM1602XA
 #define		USE_ADXL345
@@ -44,7 +44,7 @@ extern void aqm1602xa_init( void );
 extern void aqm1602xa_setStringUpper( int locate, char* str, int strNum );
 
 extern void adxl345_init( unsigned char chipnum );
-extern int adxl345_getAccel( unsigned char chipnum, signed short* value );
+extern void adxl345_getAccel( unsigned char chipnum, signed short* value );
 
 #endif
 /* [] END OF FILE */
