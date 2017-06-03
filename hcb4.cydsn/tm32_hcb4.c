@@ -196,7 +196,7 @@ void lighteningLed( void )
 	//	Lightening Full Color LED
 	for ( i=0; i<MAX_CELL; i++ ){
 		if ( colorArrayEvent[i] == true ){
-//			err = PCA9685_setFullColorLED( i/4, i%4, (unsigned short*)colorArray[i] );
+			tm32_i2cErrCode |= PCA9685_setFullColorLED( i%3, i/3, (unsigned short*)colorArray[i] );
 			colorArrayEvent[i] = false;
 		}
 	}

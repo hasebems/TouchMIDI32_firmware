@@ -532,9 +532,13 @@ static const unsigned char PCA9685_ADDRESS = 0x40;
 //-------------------------------------------------------------------------
 void PCA9685_init( int chipNumber )
 {
+	uint8	i2cBuf[2];
+	
 	//	Init Parameter
-//	writeI2cWithCmd( PCA9685_ADDRESS+chipNumber, 0x00, 0x00 );	//
-//	writeI2cWithCmd( PCA9685_ADDRESS+chipNumber, 0x01, 0x12 );	//	Invert, OE=high-impedance
+	i2cBuf[0] = 0x00; i2cBuf[1] = 0x00;
+	write_i2cDevice( PCA9685_ADDRESS+chipNumber, i2cBuf, 2 );	//
+	i2cBuf[0] = 0x01; i2cBuf[1] = 0x12;
+	write_i2cDevice( PCA9685_ADDRESS+chipNumber, i2cBuf, 2 );	//	Invert, OE=high-impedance
 }
 //-------------------------------------------------------------------------
 //		rNum, gNum, bNum : 0 - 4094  bigger, brighter
@@ -544,24 +548,30 @@ int PCA9685_setFullColorLED( int chipNumber, int ledNum, unsigned short* color  
     int err = 0;
 	int	i;
     ledNum &= 0x03;
-
+	uint8	i2cBuf[2];
+	
 	for ( i=0; i<3; i++ ){
 		//	figure out PWM counter
 		unsigned short colorCnt = *(color+i);
 		colorCnt = 4095 - colorCnt;
 		if ( colorCnt <= 0 ){ colorCnt = 1;}
+
 		//	Set PWM On Timing
-//		err = writeI2cWithCmd( PCA9685_ADDRESS+chipNumber, (unsigned char)(0x06 + i*4 + ledNum*16),
-//				(unsigned char)(colorCnt & 0x00ff) );	//
+		i2cBuf[0] = (uint8)(0x06 + i*4 + ledNum*16);
+		i2cBuf[1] = (uint8)(colorCnt & 0x00ff);
+		err = write_i2cDevice( PCA9685_ADDRESS+chipNumber, i2cBuf, 2);	//
         if ( err != 0 ){ return err; }
-//		err = writeI2cWithCmd( PCA9685_ADDRESS+chipNumber, (unsigned char)(0x07 + i*4 + ledNum*16),
-//				(unsigned char)((colorCnt & 0xff00)>>8) );	//
+		i2cBuf[0] = (uint8)(0x07 + i*4 + ledNum*16);
+		i2cBuf[1] = (uint8)((colorCnt & 0xff00)>>8);
+		err = write_i2cDevice( PCA9685_ADDRESS+chipNumber, i2cBuf, 2 );	//
         if ( err != 0 ){ return err; }
 
 		//	Set PWM Off Timing
-//		err = writeI2cWithCmd( PCA9685_ADDRESS+chipNumber, (unsigned char)(0x08 + i*4 + ledNum*16), 0 );	//
+		i2cBuf[0] = (uint8)(0x08 + i*4 + ledNum*16); i2cBuf[1] = 0;
+		err = write_i2cDevice( PCA9685_ADDRESS+chipNumber, i2cBuf, 2 );	//
         if ( err != 0 ){ return err; }
-//        err = writeI2cWithCmd( PCA9685_ADDRESS+chipNumber, (unsigned char)(0x09 + i*4 + ledNum*16), 0 );	//
+		i2cBuf[1] = (uint8)(0x09 + i*4 + ledNum*16); i2cBuf[1] = 0;
+        err = write_i2cDevice( PCA9685_ADDRESS+chipNumber, i2cBuf, 2 );	//
         if ( err != 0 ){ return err; }
 	}
     return err;
