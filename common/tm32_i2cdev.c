@@ -9,6 +9,7 @@
  * ========================================
 */
 #include	"project.h"
+#include	"tm32_app.h"
 #include	"tm32_i2cdev.h"
 
 //---------------------------------------------------------
@@ -29,6 +30,7 @@ void tm32_init_i2cDevice( void )
 	lps25h_init();	
 	aqm1602xa_init();
 	adxl345_init(0);
+	PCA9685_init(0);
 }
 //---------------------------------------------------------
 //		Write I2C Device
@@ -473,7 +475,7 @@ void adxl345_init( unsigned char chipnum )
 #endif
 }
 //-------------------------------------------------------------------------
-void adxl345_getAccel( unsigned char chipnum, signed short* value )
+int adxl345_getAccel( unsigned char chipnum, signed short* value )
 {
 	unsigned short tmp;
 	unsigned char reg[2];
@@ -515,10 +517,58 @@ void adxl345_getAccel( unsigned char chipnum, signed short* value )
 	else {
 		*(value+2) = 0;
 	}
+	return 0;
 }
 #else
 void adxl345_init( unsigned char chipnum ){}
 int adxl345_getAccel( unsigned char chipnum, signed short* value ){return 0;}
+#endif
+
+//-------------------------------------------------------------------------
+//			PCA9685 (LED Driver : I2c Device)
+//-------------------------------------------------------------------------
+#ifdef USE_PCA9685    //	for LED Driver
+static const unsigned char PCA9685_ADDRESS = 0x40;
+//-------------------------------------------------------------------------
+void PCA9685_init( int chipNumber )
+{
+	//	Init Parameter
+//	writeI2cWithCmd( PCA9685_ADDRESS+chipNumber, 0x00, 0x00 );	//
+//	writeI2cWithCmd( PCA9685_ADDRESS+chipNumber, 0x01, 0x12 );	//	Invert, OE=high-impedance
+}
+//-------------------------------------------------------------------------
+//		rNum, gNum, bNum : 0 - 4094  bigger, brighter
+//-------------------------------------------------------------------------
+int PCA9685_setFullColorLED( int chipNumber, int ledNum, unsigned short* color  )
+{
+    int err = 0;
+	int	i;
+    ledNum &= 0x03;
+
+	for ( i=0; i<3; i++ ){
+		//	figure out PWM counter
+		unsigned short colorCnt = *(color+i);
+		colorCnt = 4095 - colorCnt;
+		if ( colorCnt <= 0 ){ colorCnt = 1;}
+		//	Set PWM On Timing
+//		err = writeI2cWithCmd( PCA9685_ADDRESS+chipNumber, (unsigned char)(0x06 + i*4 + ledNum*16),
+//				(unsigned char)(colorCnt & 0x00ff) );	//
+        if ( err != 0 ){ return err; }
+//		err = writeI2cWithCmd( PCA9685_ADDRESS+chipNumber, (unsigned char)(0x07 + i*4 + ledNum*16),
+//				(unsigned char)((colorCnt & 0xff00)>>8) );	//
+        if ( err != 0 ){ return err; }
+
+		//	Set PWM Off Timing
+//		err = writeI2cWithCmd( PCA9685_ADDRESS+chipNumber, (unsigned char)(0x08 + i*4 + ledNum*16), 0 );	//
+        if ( err != 0 ){ return err; }
+//        err = writeI2cWithCmd( PCA9685_ADDRESS+chipNumber, (unsigned char)(0x09 + i*4 + ledNum*16), 0 );	//
+        if ( err != 0 ){ return err; }
+	}
+    return err;
+}
+#else
+void PCA9685_init( int chipNumber ){}
+int PCA9685_setFullColorLED( int chipNumber, int ledNum, unsigned short* color  ){}
 #endif
 
 /* [] END OF FILE */

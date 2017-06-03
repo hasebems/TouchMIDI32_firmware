@@ -127,7 +127,7 @@ void tm32_rcvMidiOnUart( uint8_t dt )
 				case 0xc0:
 				case 0xd0:{
 					//	2byte code
- #if ( USRT_MIDI_RX != UART_MIDI_RX_NOT_USE )
+ #if ( UART_MIDI_RX != UART_MIDI_RX_NOT_USE )
 					uint8_t	mdt[2];
 					mdt[0] = midiStatusByte;
 					mdt[1] = dt;
@@ -151,7 +151,7 @@ void tm32_rcvMidiOnUart( uint8_t dt )
 			switch ( midiStatusByte & 0xf0 ){
 				case 0x80: case 0x90: case 0xa0: case 0xb0:
 				case 0xe0:{
- #if ( USRT_MIDI_RX != UART_MIDI_RX_NOT_USE )
+ #if ( UART_MIDI_RX != UART_MIDI_RX_NOT_USE )
 					uint8_t mdt[3];
 					mdt[0] = midiStatusByte;
 					mdt[1] = midiDataByte1;

@@ -13,16 +13,7 @@
 	
 #include	"project.h"
 
-
-//---------------------------------------------------------
-//		I2C Device Configuration
-//---------------------------------------------------------
-#define		USE_ADA88
-//#define		USE_LPS22HB
-#define		USE_LPS25H
-//#define		USE_AQM1602XA
-#define		USE_ADXL345
-
+	
 //---------------------------------------------------------
 //			TouchMIDI32 External Functions
 //---------------------------------------------------------
@@ -44,7 +35,10 @@ extern void aqm1602xa_init( void );
 extern void aqm1602xa_setStringUpper( int locate, char* str, int strNum );
 
 extern void adxl345_init( unsigned char chipnum );
-extern void adxl345_getAccel( unsigned char chipnum, signed short* value );
+extern int adxl345_getAccel( unsigned char chipnum, signed short* value );
+
+extern void PCA9685_init( int chipNumber );
+extern int PCA9685_setFullColorLED( int chipNumber, int ledNum, unsigned short* color  );
 
 #endif
 /* [] END OF FILE */

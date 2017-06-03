@@ -49,7 +49,7 @@ uint8 tm32_p7_4( void );
 extern void tm32_initLib( void );
 extern void tm32_generateTouchSenseEvent( uint32 swState );
 extern void tm32_rcvMidiOnUart( uint8_t dt );
-extern void tm32_intrpt( void );
+extern void tm32_intrpt(void);
 
 #endif
 /* [] END OF FILE */
