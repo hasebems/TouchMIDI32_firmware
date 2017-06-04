@@ -199,8 +199,8 @@
 <file name="..\common\tm32_i2cdev.h" />
 <file name=".\cyapicallbacks.h" />
 <file name=".\tm32_app.h" />
+<file name="..\common\tm32_lib.h" />
 <file name=".\CortexM0\ARM_GCC_493\Release\tm32_hcb4.o">
-<dep name="..\common\tm32_lib.h" />
 <dep name=".\Generated_Source\PSoC4\Bootloadable_1.h" />
 <dep name=".\Generated_Source\PSoC4\CapSense.h" />
 <dep name=".\Generated_Source\PSoC4\CapSense_Configuration.h" />
@@ -291,11 +291,11 @@
 <dep name=".\Generated_Source\PSoC4\isrTimer.h" />
 <dep name=".\Generated_Source\PSoC4\project.h" />
 <dep name="..\common\tm32_i2cdev.h" />
+<dep name="..\common\tm32_lib.h" />
 <dep name=".\cyapicallbacks.h" />
 <dep name=".\tm32_hcb4.c" />
 <dep name=".\tm32_hcb4_dle.h" />
 </file>
-<file name="..\common\tm32_lib.h" />
 <file name=".\tm32_hcb4.c" />
 <file name=".\tm32_hcb4_dle.h" />
 <file name=".\CortexM0\ARM_GCC_493\Release\main.o">
@@ -3748,7 +3748,7 @@
 </dataGuid>
 <dataGuid v="769d31ea-68b1-4f0c-b90a-7c10a43ee563">
 <CyGuid_769d31ea-68b1-4f0c-b90a-7c10a43ee563 type_name="CyDesigner.Common.ProjMgmt.Model.CyLinkCustomData" version="1">
-<deps_time v="131409295226812461" />
+<deps_time v="131410534187912372" />
 </CyGuid_769d31ea-68b1-4f0c-b90a-7c10a43ee563>
 </dataGuid>
 <dataGuid v="504337dd-7d07-4bc7-9057-90e60cf6c469">

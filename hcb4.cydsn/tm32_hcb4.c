@@ -20,7 +20,7 @@
 //---------------------------------------------------------
 #define		MAX_BEAT		8
 #define		MAX_CELL		12
-#define		MAX_BEAT_LIGHTING_PERIOD	15
+#define		MAX_BEAT_LIGHTING_PERIOD	20
 //---------------------------------------------------------
 //	for TOUCH_EVENT_TABLE
 enum SW_TYPE {
@@ -78,13 +78,11 @@ void tm32_init( void )
 	int i;
 	
 	tm32_init_i2cDevice();
-	debugCounter = 0;
+	PCA9685_init(0);
+	PCA9685_init(1);
+	PCA9685_init(2);
 
-	//	Mode Check
-	tm32_p6_1_Lo();
-	tm32_p6_2_Lo();
-	tm32_p6_3_Lo();
-	tm32_p6_4_Lo();
+	debugCounter = 0;
 
 	hcbActive = false;
 	hcbBlockID = 0;
@@ -99,12 +97,12 @@ void tm32_init( void )
 
 	hcbLightPattern[0] = 0b0000000000000111;
 	hcbLightPattern[1] = 0b0000000000111000;
-	hcbLightPattern[2] = 0b0000011100000000;
-	hcbLightPattern[3] = 0b0011100000000000;
+	hcbLightPattern[2] = 0b0000000111000000;
+	hcbLightPattern[3] = 0b0000111000000000;
 	hcbLightPattern[4] = 0b0000000000000111;
 	hcbLightPattern[5] = 0b0000000000111000;
-	hcbLightPattern[6] = 0b0000011100000000;
-	hcbLightPattern[7] = 0b0011100000000000;
+	hcbLightPattern[6] = 0b0000000111000000;
+	hcbLightPattern[7] = 0b0000111000000000;
 	
 	for ( i=0; i<DOREMI_MAX; i++ ){
 		DLE_init(&dle[i]);
@@ -114,12 +112,14 @@ void tm32_init( void )
 	systemTimerStkFor10msec = tm32_systemTimer+40;
 	systemTimerStkFor4msec = tm32_systemTimer+16;
 	counter10msec = 0;
-
 	touchCurrentStatus = 0;
 
     //  H/W init
-	tm32_p6_1_Hi();
-	tm32_p6_2_Hi();
+	tm32_p6_1_Hi();	//	
+	tm32_p6_2_Lo();	//	OE enable
+
+	tm32_p6_3_Lo();
+	tm32_p6_4_Lo();
 }
 //---------------------------------------------------------
 //			Set MIDI Buffer
@@ -157,7 +157,7 @@ void generateTimeEvent( void )
 //---------------------------------------------------------
 void lighteningLed( void )
 {
-	int		i;
+	int		i, j;
 	int 	seg;
 	bool	beatOff = false;
 
@@ -175,28 +175,34 @@ void lighteningLed( void )
 	}	
 	
 	//	Check DLE Segment & Make Beat Event
-	seg = DLE_getSegment(&dle[hcbCrntBeat]);
-	if ( seg == SEG_NOT_USE ){
-		if ( beatOn == true ){
-			//	Light Beat
-			for ( i=0; i<VOLUME_ARRAY_MAX; i++ ){
-				colorArray[hcbCrntBeat][i] = 2000 / (((hcbCrntBeat&0x01)*4)+1);
+	uint16_t lightPtn = hcbLightPattern[hcbCrntBeat];
+	for ( i=0; i<MAX_CELL; i++ ){
+		uint16_t bitPtn = 0x0001<<i;
+		if ( lightPtn & bitPtn ){
+			seg = DLE_getSegment(&dle[i]);
+			if ( seg == SEG_NOT_USE ){
+				if ( beatOn == true ){
+					//	Light Beat
+					for ( j=0; j<VOLUME_ARRAY_MAX; j++ ){
+						colorArray[i][j] = 2000;// / (((hcbCrntBeat&0x01)*4)+1);
+					}
+					colorArrayEvent[i] = true;
+				}
+				if ( beatOff == true ){
+					//	turn off
+					for ( j=0; j<VOLUME_ARRAY_MAX; j++ ){
+						colorArray[i][j] = 0;
+					}
+					colorArrayEvent[i] = true;
+				}
 			}
-			colorArrayEvent[hcbCrntBeat] = true;
-		}
-		if ( beatOff == true ){
-			//	turn off
-			for ( i=0; i<VOLUME_ARRAY_MAX; i++ ){
-				colorArray[hcbCrntBeat][i] = 0;
-			}
-			colorArrayEvent[hcbCrntBeat] = true;
 		}
 	}
 
 	//	Lightening Full Color LED
 	for ( i=0; i<MAX_CELL; i++ ){
 		if ( colorArrayEvent[i] == true ){
-			tm32_i2cErrCode |= PCA9685_setFullColorLED( i%3, i/3, (unsigned short*)colorArray[i] );
+			tm32_i2cErrCode |= PCA9685_setFullColorLED( 2-i%3, i/3, (unsigned short*)colorArray[i] );
 			colorArrayEvent[i] = false;
 		}
 	}
@@ -223,8 +229,7 @@ void tm32_loop( void )
 	}
 	else {
 		//	Normal
-		if ( counter10msec & 0x80 ){ tm32_p6_4_Lo(); }
-		else { tm32_p6_4_Hi(); }	
+		//tm32_p6_4_Hi();
 	}
 }
 //---------------------------------------------------------
@@ -304,7 +309,7 @@ void tm32_rcvUart( int count, uint8_t* buf )
 			}
 			case 0xe0:{
 				if ( (*buf & 0x0f) == hcbBlockID ){
-					getLightPattern( ((*(buf+1))<<8) | (*(buf+2)) );
+					getLightPattern( ((*(buf+1))<<6) | (*(buf+2)) );
 				}
 				else {
 					setMidiBuffer( *buf, *(buf+1), *(buf+2) );
