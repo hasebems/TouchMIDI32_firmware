@@ -21,6 +21,8 @@
 #define		MAX_BEAT		8
 #define		MAX_CELL		12
 #define		MAX_BEAT_LIGHTING_PERIOD	20
+#define		MAX_CONNECTION_PTN			15
+#define		MAX_ID						6
 //---------------------------------------------------------
 //	for TOUCH_EVENT_TABLE
 enum SW_TYPE {
@@ -36,7 +38,7 @@ enum SW_TYPE {
 //	HCB config & state
 static bool			hcbActive;
 static uint8_t		hcbBlockID;
-static uint8_t		hcbBlockConnectionPattern;
+static uint8_t		hcbBlockConnectionPattern;	//	0 - 14
 static uint8_t		hcbCrntBeat;
 static uint8_t		hcbCounterPerBeat;
 
@@ -60,11 +62,39 @@ static uint32_t		counter10msec;
 static uint32_t		systemTimerStkFor10msec;
 static uint32_t		systemTimerStkFor4msec;
 
-static uint8_t		touchCurrentStatus;
+static uint16_t		touchCurrentStatus;
 static int			debugCounter;
 
 static DLE 			dle[DOREMI_MAX];
 
+//---------------------------------------------------------
+//			Table
+//---------------------------------------------------------
+
+//---------------------------------------------------------
+static const int8_t tOctave[MAX_CONNECTION_PTN][MAX_ID] = {
+// ID   1   2   3   4   5   6
+	{	0,	0,	0,	0,	0,	0	},	//	not work
+	{	0,	0,	0,	0,	0,	0	},	//	1
+	{	1,	0,	0,	0,	0,	0	},	//	2 left-right
+	{	0,	0,	0,	0,	0,	0	},	//	2 upper-lower
+	{	1,	0,	-1,	0,	0,	0	},	//	3 left-right
+	{	0,	0,	0,	0,	0,	0	},	//	3 upper-lower
+	{	2,	1,	0,	-1,	0,	0	},	//	4 left-right
+	{	0,	0,	0,	0,	0,	0	},	//	4 upper-lower
+	{	1,	1,	0,	0,	0,	0	},	//	4 2*2
+	{	2,	1,	0,	-1,	-2,	0	},	//	5 left-right
+	{	0,	0,	0,	0,	0,	0	},	//	5 upper-lower
+	{	3,	2,	1,	0,	-1,	-2	},	//	6 left-right
+	{	0,	0,	0,	0,	0,	0	},	//	6 upper-lower
+	{	1,	1,	0,	0,	-1,	-1	},	//	6 2*3
+	{	1,	1,	1,	0,	0,	0	}	//	6 3*2
+};
+//---------------------------------------------------------
+static const int8_t tMaxBlock[MAX_CONNECTION_PTN] = 
+{
+	0,	1,	2,	2,	3,	3,	4,	4,	4,	5,	5,	6,	6,	6,	6
+};
 //---------------------------------------------------------
 //			Interrupt
 //---------------------------------------------------------
@@ -86,7 +116,7 @@ void tm32_init( void )
 
 	hcbActive = false;
 	hcbBlockID = 0;
-	hcbBlockConnectionPattern = 0x10;
+	hcbBlockConnectionPattern = 0x01;
 	hcbCrntBeat = 0;
 	hcbCounterPerBeat = 0;
 	
@@ -165,6 +195,7 @@ void lighteningLed( void )
 	if ( event10msec ){
 		hcbCounterPerBeat++;
 		if ( MAX_BEAT_LIGHTING_PERIOD == hcbCounterPerBeat ){
+			//	beat light off event
 			beatOff = true;
 		}
 		for ( i=0; i<DOREMI_MAX; i++ ){
@@ -181,7 +212,7 @@ void lighteningLed( void )
 		if ( lightPtn & bitPtn ){
 			seg = DLE_getSegment(&dle[i]);
 			if ( seg == SEG_NOT_USE ){
-				if ( beatOn == true ){
+				if (( beatOn == true ) && ( hcbActive == true )){
 					//	Light Beat
 					for ( j=0; j<VOLUME_ARRAY_MAX; j++ ){
 						colorArray[i][j] = 2000;// / (((hcbCrntBeat&0x01)*4)+1);
@@ -233,21 +264,38 @@ void tm32_loop( void )
 	}
 }
 //---------------------------------------------------------
+//			HCB No Active
+//---------------------------------------------------------
+void setHcbNoActive( void )
+{
+	int i;
+	uint16_t bitPtn = 0x0001;
+	hcbActive = false;
+	for ( i=0; i<MAX_CELL; i++ ){
+		if ( touchCurrentStatus & bitPtn ){
+			//	All Key Off
+			setMidiBuffer( 0x90, 0x3c+i+tOctave[hcbBlockConnectionPattern][hcbBlockID], 0x00 );
+		}
+		bitPtn <<= 1;
+	}
+}
+//---------------------------------------------------------
 //			Receive UART MIDI
 //---------------------------------------------------------
 void getBeat( uint8_t id, uint8_t beat )
 {
-	hcbBlockID = (id & 0x0f) + 1;
+	uint8_t	myId = (id & 0x0f) + 1;
 	hcbCrntBeat = beat;
 	hcbCounterPerBeat = 0; // counter clear
 	beatOn = true;
 	
-	uint8_t maxId = (hcbBlockConnectionPattern & 0xf0)>>4;
-	if ( hcbBlockID > maxId ){
-		hcbActive = false;
+	uint8_t maxId = tMaxBlock[hcbBlockConnectionPattern];
+	if ( myId > maxId ){
+		setHcbNoActive();
 	}
 	else {
 		hcbActive = true;
+		hcbBlockID = myId;
 	}
 	
 	//	Send Beat
@@ -297,7 +345,7 @@ void tm32_rcvUart( int count, uint8_t* buf )
 			case 0xb0:{
 				if ( 0x52 == *(buf+1) ){
 					//	block connection pattern
-					hcbActive = false;
+					setHcbNoActive();
 					setMidiBuffer( 0xb0, 0x52, *(buf+2) );
 					hcbBlockConnectionPattern = *(buf+2);
 				}
@@ -325,18 +373,22 @@ void tm32_rcvUart( int count, uint8_t* buf )
 //---------------------------------------------------------
 void tm32_touchOn( int number )
 {
-	touchCurrentStatus |= (0x01<<number);
-	DLE_on( &dle[number], &colorArray[number][0], number );
-	colorArrayEvent[number] = true;
-	setMidiBuffer( 0x90, 0x3c+number, 0x7f );
+	if ( hcbActive == true ){
+		touchCurrentStatus |= (0x01<<number);
+		DLE_on( &dle[number], &colorArray[number][0], number );
+		colorArrayEvent[number] = true;
+		setMidiBuffer( 0x90, 0x3c+number+tOctave[hcbBlockConnectionPattern][hcbBlockID], 0x7f );
+	}
 }
 //---------------------------------------------------------
 //			Touch Off
 //---------------------------------------------------------
 void tm32_touchOff( int number )
 {
-	touchCurrentStatus &= ~(0x01<<number);
-	DLE_off( &dle[number] );
-	setMidiBuffer( 0x90, 0x3c+number, 0x00 );
+	if ( touchCurrentStatus & (0x01<<number)){
+		touchCurrentStatus &= ~(0x01<<number);
+		DLE_off( &dle[number] );
+		setMidiBuffer( 0x90, 0x3c+number+tOctave[hcbBlockConnectionPattern][hcbBlockID], 0x00 );
+	}
 }
 /* [] END OF FILE */
