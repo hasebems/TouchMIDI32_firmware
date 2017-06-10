@@ -62,7 +62,8 @@ static uint32_t		counter10msec;
 static uint32_t		systemTimerStkFor10msec;
 static uint32_t		systemTimerStkFor4msec;
 
-static uint16_t		touchCurrentStatus;
+static uint32_t		touchCurrentStatus;
+static uint16_t		noteCurrentStatus;
 static int			debugCounter;
 
 static DLE 			dle[DOREMI_MAX];
@@ -143,6 +144,7 @@ void tm32_init( void )
 	systemTimerStkFor4msec = tm32_systemTimer+16;
 	counter10msec = 0;
 	touchCurrentStatus = 0;
+	noteCurrentStatus = 0;
 
     //  H/W init
 	tm32_p6_1_Hi();	//	
@@ -371,13 +373,22 @@ void tm32_rcvUart( int count, uint8_t* buf )
 //---------------------------------------------------------
 //			Touch On
 //---------------------------------------------------------
+static const int tNode2Note[32] =
+{	2,2,5,5,8,8,11,11,1,1,4,4,7,7,10,10,-1,-1,-1,-1,-1,-1,-1,-1,0,0,3,3,6,6,9,9	};
+//---------------------------------------------------------
 void tm32_touchOn( int number )
 {
-	if ( hcbActive == true ){
-		touchCurrentStatus |= (0x01<<number);
-		DLE_on( &dle[number], &colorArray[number][0], number );
-		colorArrayEvent[number] = true;
-		setMidiBuffer( 0x90, 0x3c+number+tOctave[hcbBlockConnectionPattern][hcbBlockID], 0x7f );
+	int	note;
+	touchCurrentStatus |= (0x01<<number);
+	if ( touchCurrentStatus & (0x03<<((number/2)*2)) ){
+		if ( hcbActive == true ){
+			note = tNode2Note[number];
+			if (( note >= 12 ) || ( note < 0 )){ return; }
+			noteCurrentStatus |= 0x01<<note;
+			DLE_on( &dle[note], &colorArray[note][0], note );
+			colorArrayEvent[note] = true;
+			setMidiBuffer( 0x90, 0x3c+note+tOctave[hcbBlockConnectionPattern][hcbBlockID], 0x7f );
+		}
 	}
 }
 //---------------------------------------------------------
@@ -385,10 +396,14 @@ void tm32_touchOn( int number )
 //---------------------------------------------------------
 void tm32_touchOff( int number )
 {
-	if ( touchCurrentStatus & (0x01<<number)){
-		touchCurrentStatus &= ~(0x01<<number);
-		DLE_off( &dle[number] );
-		setMidiBuffer( 0x90, 0x3c+number+tOctave[hcbBlockConnectionPattern][hcbBlockID], 0x00 );
+	touchCurrentStatus &= ~(0x01<<number);
+	if (!( touchCurrentStatus & (0x03<<((number/2)*2)) )){
+		int note = tNode2Note[number];
+		if ( noteCurrentStatus & (0x01<<note)){
+			noteCurrentStatus &= ~(0x01<<note);
+			DLE_off( &dle[note] );
+			setMidiBuffer( 0x90, 0x3c+note+tOctave[hcbBlockConnectionPattern][hcbBlockID], 0x00 );
+		}
 	}
 }
 /* [] END OF FILE */
