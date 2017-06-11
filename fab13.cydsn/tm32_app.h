@@ -34,7 +34,7 @@ extern void tm32_rcvUart( int count, uint8_t* buf );
 //---------------------------------------------------------
 //		I2C Device Configuration
 //---------------------------------------------------------
-//#define		USE_ADA88
+#define		USE_ADA88
 //#define		USE_LPS22HB
 #define		USE_LPS25H
 //#define		USE_AQM1602XA

@@ -34,8 +34,6 @@ static void MIDIOutIndicator( void );
 //---------------------------------------------------------
 //			Variables
 //---------------------------------------------------------
-//static uint16	prsValue;
-//static uint16	tempPrsValue;
 static uint8	heartbeat;
 static uint32_t	sentSignalTime;
 
@@ -98,8 +96,6 @@ void tm32_init( void )
 	
 	tm32_init_i2cDevice();
 
-	//prsValue = 0;
-	//tempPrsValue = 0;
 	heartbeat = 0; 
 	sentSignalTime = 0;
 
@@ -111,11 +107,13 @@ void tm32_init( void )
 	offsetOctave = 0;
 	pcNumber = 0;
 
-	systemTimerStkFor4msec = tm32_systemTimer+16;
+	systemTimerStkFor4msec = tm32_systemTimer+2;
 	event4msec = false;
 	midiExp = 0;
 	tempPrsValue = 0;
 	prsValue = -1000;	//	different number from tempPrsValue
+
+	AnalysePressure_Init();
 	
 	//	Mode Check
 	mode = 0;
@@ -150,11 +148,10 @@ static void pressureSensor( void )
 
 	tempPrsValue = prs;		
  	if ( tempPrsValue != prsValue ){
-//		int dispValue = tempPrsValue - 10000;
-//		ada88_writeNumber(dispValue);
+		int dispValue = tempPrsValue - 10000;
+		ada88_writeNumber(dispValue);
 		prsValue = tempPrsValue;
-	}	
-	
+	}
 	
 	AnalysePressure_setNewRawPressure(prs);
 	if ( event4msec == true ){
@@ -163,7 +160,7 @@ static void pressureSensor( void )
 		}
     }
 
-	ada88_writeNumber(midiExp);
+//	ada88_writeNumber(midiExp);
 }
 //---------------------------------------------------------
 //			Loop
@@ -172,7 +169,7 @@ void tm32_loop( void )
 {
 	if ( systemTimerStkFor4msec < tm32_systemTimer ){
 		event4msec = true;
-		systemTimerStkFor4msec += 16;
+		systemTimerStkFor4msec += 2;
 	}
 	else {
 		event4msec = false;
