@@ -40,6 +40,7 @@ static bool			hcbActive;
 static uint8_t		hcbBlockID;
 static uint8_t		hcbBlockConnectionPattern;	//	0 - 14
 static uint8_t		hcbCrntBeat;
+static uint8_t		hcbNextBeat;
 static uint8_t		hcbCounterPerBeat;
 
 //	Light Pattern
@@ -63,7 +64,6 @@ static uint32_t		systemTimerStkFor10msec;
 static uint32_t		systemTimerStkFor4msec;
 
 static uint32_t		touchCurrentStatus;
-static uint16_t		noteCurrentStatus;
 static int			debugCounter;
 
 static DLE 			dle[DOREMI_MAX];
@@ -73,23 +73,23 @@ static DLE 			dle[DOREMI_MAX];
 //---------------------------------------------------------
 
 //---------------------------------------------------------
-static const int8_t tOctave[MAX_CONNECTION_PTN][MAX_ID] = {
-// ID   1   2   3   4   5   6
-	{	0,	0,	0,	0,	0,	0	},	//	not work
-	{	0,	0,	0,	0,	0,	0	},	//	1
-	{	1,	0,	0,	0,	0,	0	},	//	2 left-right
-	{	0,	0,	0,	0,	0,	0	},	//	2 upper-lower
-	{	1,	0,	-1,	0,	0,	0	},	//	3 left-right
-	{	0,	0,	0,	0,	0,	0	},	//	3 upper-lower
-	{	2,	1,	0,	-1,	0,	0	},	//	4 left-right
-	{	0,	0,	0,	0,	0,	0	},	//	4 upper-lower
-	{	1,	1,	0,	0,	0,	0	},	//	4 2*2
-	{	2,	1,	0,	-1,	-2,	0	},	//	5 left-right
-	{	0,	0,	0,	0,	0,	0	},	//	5 upper-lower
-	{	3,	2,	1,	0,	-1,	-2	},	//	6 left-right
-	{	0,	0,	0,	0,	0,	0	},	//	6 upper-lower
-	{	1,	1,	0,	0,	-1,	-1	},	//	6 2*3
-	{	1,	1,	1,	0,	0,	0	}	//	6 3*2
+static const int8_t tOctave[MAX_CONNECTION_PTN][MAX_ID+1] = {
+// ID   0	1   2   3   4   5   6
+	{	0,	0,	0,	0,	0,	0,	0	},	//	not work
+	{	0,	0,	0,	0,	0,	0,	0	},	//	1
+	{	0,	12,	0,	0,	0,	0,	0	},	//	2 left-right
+	{	0,	0,	0,	0,	0,	0,	0	},	//	2 upper-lower
+	{	0,	12,	0,	-12,0,	0,	0	},	//	3 left-right
+	{	0,	0,	0,	0,	0,	0,	0	},	//	3 upper-lower
+	{	0,	24,	12,	0,	-12,0,	0	},	//	4 left-right
+	{	0,	0,	0,	0,	0,	0,	0	},	//	4 upper-lower
+	{	0,	12,	12,	0,	0,	0,	0	},	//	4 2*2
+	{	0,	24,	12,	0,	-12,-24,0	},	//	5 left-right
+	{	0,	0,	0,	0,	0,	0,	0	},	//	5 upper-lower
+	{	0,	36,	24,	12,	0,	-12,-24	},	//	6 left-right
+	{	0,	0,	0,	0,	0,	0,	0	},	//	6 upper-lower
+	{	0,	12,	12,	0,	0,	-12,-12	},	//	6 2*3
+	{	0,	12,	12,	12,	0,	0,	0	}	//	6 3*2
 };
 //---------------------------------------------------------
 static const int8_t tMaxBlock[MAX_CONNECTION_PTN] = 
@@ -118,7 +118,8 @@ void tm32_init( void )
 	hcbActive = false;
 	hcbBlockID = 0;
 	hcbBlockConnectionPattern = 0x01;
-	hcbCrntBeat = 0;
+	hcbCrntBeat = 0xff;
+	hcbNextBeat = 0xff;
 	hcbCounterPerBeat = 0;
 	
 	hcbLightPatternRcvMode = false;
@@ -144,8 +145,7 @@ void tm32_init( void )
 	systemTimerStkFor4msec = tm32_systemTimer+16;
 	counter10msec = 0;
 	touchCurrentStatus = 0;
-	noteCurrentStatus = 0;
-
+	
     //  H/W init
 	tm32_p6_1_Hi();	//	
 	tm32_p6_2_Lo();	//	OE enable
@@ -158,11 +158,15 @@ void tm32_init( void )
 //---------------------------------------------------------
 static void setMidiBuffer( uint8 statusByte, uint8 secondByte, uint8 thirdByte )
 {
-	uint8 midiMsg[3];
+	uint8	midiMsg[3];
+	uint8	midiStatus = statusByte & 0xf0;
 	midiMsg[0] = statusByte;
 	midiMsg[1] = secondByte;
 	midiMsg[2] = thirdByte;
-	tm32_usbMidiOut( 3, midiMsg );
+	
+	if (( 0x90 == midiStatus ) || ( 0xa0 == midiStatus )){
+		tm32_usbMidiOut( 3, midiMsg );
+	}
 	tm32_uartMidiOut( 3, midiMsg );
 }
 //---------------------------------------------------------
@@ -187,10 +191,18 @@ void generateTimeEvent( void )
 	}
 }
 //---------------------------------------------------------
+void makeLedDisplayBeats( uint8_t cell, uint16_t brightness ) 
+{
+	int j;
+	for ( j=0; j<VOLUME_ARRAY_MAX; j++ ){
+		colorArray[cell][j] = brightness;// / (((hcbCrntBeat&0x01)*4)+1);
+	}
+	colorArrayEvent[cell] = true;
+}
+//---------------------------------------------------------
 void lighteningLed( void )
 {
-	int		i, j;
-	int 	seg;
+	int		i;
 	bool	beatOff = false;
 
 	//	Periodic Job & Make Time Event
@@ -208,27 +220,32 @@ void lighteningLed( void )
 	}	
 	
 	//	Check DLE Segment & Make Beat Event
-	uint16_t lightPtn = hcbLightPattern[hcbCrntBeat];
-	for ( i=0; i<MAX_CELL; i++ ){
-		uint16_t bitPtn = 0x0001<<i;
-		if ( lightPtn & bitPtn ){
-			seg = DLE_getSegment(&dle[i]);
-			if ( seg == SEG_NOT_USE ){
-				if (( beatOn == true ) && ( hcbActive == true )){
-					//	Light Beat
-					for ( j=0; j<VOLUME_ARRAY_MAX; j++ ){
-						colorArray[i][j] = 2000;// / (((hcbCrntBeat&0x01)*4)+1);
+	uint16_t lightPtn = 0;
+	uint16_t unlightPtn = 0;
+	if ( true == beatOn ){
+		lightPtn = hcbLightPattern[hcbNextBeat];
+	}
+	if (( true == beatOn ) || ( true == beatOff )){
+		if ( 0xff != hcbCrntBeat ){
+			unlightPtn = hcbLightPattern[hcbCrntBeat];
+		}
+	}
+	if ( lightPtn | unlightPtn ){
+		uint16_t bitPtn = 0x0001;
+		for ( i=0; i<MAX_CELL; i++ ){
+			if ( SEG_NOT_USE == DLE_getSegment(&dle[i]) ){
+				if ( lightPtn & bitPtn ){
+					if ( true == hcbActive ){
+						//	Light Beat
+						makeLedDisplayBeats(i,2000);
 					}
-					colorArrayEvent[i] = true;
 				}
-				if ( beatOff == true ){
+				if ( unlightPtn & bitPtn ){
 					//	turn off
-					for ( j=0; j<VOLUME_ARRAY_MAX; j++ ){
-						colorArray[i][j] = 0;
-					}
-					colorArrayEvent[i] = true;
+					makeLedDisplayBeats(i,0);
 				}
 			}
+			bitPtn <<= 1;
 		}
 	}
 
@@ -241,6 +258,7 @@ void lighteningLed( void )
 	}
 
 	beatOn = false;
+	hcbCrntBeat = hcbNextBeat;
 }
 //---------------------------------------------------------
 void tm32_loop( void )
@@ -287,7 +305,7 @@ void setHcbNoActive( void )
 void getBeat( uint8_t id, uint8_t beat )
 {
 	uint8_t	myId = (id & 0x0f) + 1;
-	hcbCrntBeat = beat;
+	hcbNextBeat = beat;
 	hcbCounterPerBeat = 0; // counter clear
 	beatOn = true;
 	
@@ -379,31 +397,29 @@ static const int tNode2Note[32] =
 void tm32_touchOn( int number )
 {
 	int	note;
-	touchCurrentStatus |= (0x01<<number);
-	if ( touchCurrentStatus & (0x03<<((number/2)*2)) ){
+	uint32_t	swEvent = 0x0001<<number;	
+	if (!( touchCurrentStatus & swEvent )){
 		if ( hcbActive == true ){
 			note = tNode2Note[number];
 			if (( note >= 12 ) || ( note < 0 )){ return; }
-			noteCurrentStatus |= 0x01<<note;
 			DLE_on( &dle[note], &colorArray[note][0], note );
 			colorArrayEvent[note] = true;
 			setMidiBuffer( 0x90, 0x3c+note+tOctave[hcbBlockConnectionPattern][hcbBlockID], 0x7f );
 		}
 	}
+	touchCurrentStatus |= (0x01<<number);
 }
 //---------------------------------------------------------
 //			Touch Off
 //---------------------------------------------------------
 void tm32_touchOff( int number )
 {
-	touchCurrentStatus &= ~(0x01<<number);
-	if (!( touchCurrentStatus & (0x03<<((number/2)*2)) )){
+	uint32_t	swEvent = 0x0001<<number;
+	if ( touchCurrentStatus & swEvent ){
 		int note = tNode2Note[number];
-		if ( noteCurrentStatus & (0x01<<note)){
-			noteCurrentStatus &= ~(0x01<<note);
-			DLE_off( &dle[note] );
-			setMidiBuffer( 0x90, 0x3c+note+tOctave[hcbBlockConnectionPattern][hcbBlockID], 0x00 );
-		}
+		DLE_off( &dle[note] );
+		setMidiBuffer( 0x90, 0x3c+note+tOctave[hcbBlockConnectionPattern][hcbBlockID], 0x00 );
 	}
+	touchCurrentStatus &= ~(0x01<<number);
 }
 /* [] END OF FILE */
