@@ -64,6 +64,8 @@ static uint32_t		systemTimerStkFor10msec;
 static uint32_t		systemTimerStkFor4msec;
 
 static uint32_t		touchCurrentStatus;
+static uint8_t		keyOnCounter[MAX_CELL];	//	(0 - 3)  0-2:keyon counter, 3:keyon at the same time
+static uint32_t		keyOnTimeStock[MAX_CELL];
 static int			debugCounter;
 
 static DLE 			dle[DOREMI_MAX];
@@ -145,6 +147,11 @@ void tm32_init( void )
 	systemTimerStkFor4msec = tm32_systemTimer+16;
 	counter10msec = 0;
 	touchCurrentStatus = 0;
+	
+	for ( i=0; i<MAX_CELL; i++ ){
+		keyOnCounter[i] = 0;
+		keyOnTimeStock[i] = 0;
+	}
 	
     //  H/W init
 	tm32_p6_1_Hi();	//	
@@ -234,15 +241,15 @@ void lighteningLed( void )
 		uint16_t bitPtn = 0x0001;
 		for ( i=0; i<MAX_CELL; i++ ){
 			if ( SEG_NOT_USE == DLE_getSegment(&dle[i]) ){
+				if ( unlightPtn & bitPtn ){
+					//	turn off
+					makeLedDisplayBeats(i,0);
+				}
 				if ( lightPtn & bitPtn ){
 					if ( true == hcbActive ){
 						//	Light Beat
 						makeLedDisplayBeats(i,2000);
 					}
-				}
-				if ( unlightPtn & bitPtn ){
-					//	turn off
-					makeLedDisplayBeats(i,0);
 				}
 			}
 			bitPtn <<= 1;
@@ -267,7 +274,12 @@ void tm32_loop( void )
 	generateTimeEvent();
 
 	//	Counter Job
-	if ( event10msec ){ hcbLightPatternRcvTime++;}
+	if ( event10msec ){
+		hcbLightPatternRcvTime++;
+		if ( hcbLightPatternRcvTime > 10 ){
+			hcbLightPatternRcvMode = false;
+		}
+	}
 
 	// Full Color LED lighting
 	lighteningLed();
@@ -330,11 +342,7 @@ void getLightPattern( uint16_t ptn )
 {
 	if ( hcbLightPatternRcvMode == true ){
 		hcbLightPatternRcvModeCounter++;
-		if ( hcbLightPatternRcvTime > 10 ){
-			//	over time
-			hcbLightPatternRcvMode = false;
-		}
-		else if ( MAX_BEAT <= hcbLightPatternRcvModeCounter ){
+		if ( MAX_BEAT <= hcbLightPatternRcvModeCounter ){
 			//	over beat
 			hcbLightPatternRcvMode = false;
 		}
@@ -373,11 +381,13 @@ void tm32_rcvUart( int count, uint8_t* buf )
 					//	beat signal
 					getBeat( *buf, *(buf+2));
 				}
-				break;	
+				break;
 			}
 			case 0xe0:{
 				if ( (*buf & 0x0f) == hcbBlockID ){
-					getLightPattern( ((*(buf+1))<<6) | (*(buf+2)) );
+					uint16 ptn = ((uint16)*(buf+2))<<6;
+					ptn |= (uint16)*(buf+1);
+					getLightPattern( ptn );
 				}
 				else {
 					setMidiBuffer( *buf, *(buf+1), *(buf+2) );
@@ -394,6 +404,16 @@ void tm32_rcvUart( int count, uint8_t* buf )
 static const int tNode2Note[32] =
 {	2,2,5,5,8,8,11,11,1,1,4,4,7,7,10,10,-1,-1,-1,-1,-1,-1,-1,-1,9,9,6,6,3,3,0,0	};
 //---------------------------------------------------------
+void setKeyOn( uint8_t note )
+{
+	DLE_on( &dle[note], &colorArray[note][0], note );
+	colorArrayEvent[note] = true;
+	setMidiBuffer( 0x90, 0x3c+note+tOctave[hcbBlockConnectionPattern][hcbBlockID], 0x7f );
+
+	keyOnTimeStock[note] = counter10msec;
+	if ( keyOnCounter[note] < 2 ){ keyOnCounter[note]++;}
+}
+//---------------------------------------------------------
 void tm32_touchOn( int number )
 {
 	int	note;
@@ -402,9 +422,12 @@ void tm32_touchOn( int number )
 		if ( hcbActive == true ){
 			note = tNode2Note[number];
 			if (( note >= 12 ) || ( note < 0 )){ return; }
-			DLE_on( &dle[note], &colorArray[note][0], note );
-			colorArrayEvent[note] = true;
-			setMidiBuffer( 0x90, 0x3c+note+tOctave[hcbBlockConnectionPattern][hcbBlockID], 0x7f );
+			
+			if ( keyOnCounter[note] == 0 ){ setKeyOn(note);}
+			else if ( keyOnCounter[note] == 1 ){
+				if ( keyOnTimeStock[note]+5 < counter10msec ){ setKeyOn(note);}
+				else { keyOnCounter[note] = 3; }
+			}
 		}
 	}
 	touchCurrentStatus |= (0x01<<number);
@@ -417,8 +440,16 @@ void tm32_touchOff( int number )
 	uint32_t	swEvent = 0x0001<<number;
 	if ( touchCurrentStatus & swEvent ){
 		int note = tNode2Note[number];
-		DLE_off( &dle[note] );
-		setMidiBuffer( 0x90, 0x3c+note+tOctave[hcbBlockConnectionPattern][hcbBlockID], 0x00 );
+		if (( note >= 12 ) || ( note < 0 )){ return; }
+		
+		if ( keyOnCounter[note] == 3 ){
+			keyOnCounter[note] = 1;
+		}
+		else if ( keyOnCounter[note] != 0 ){
+			DLE_off( &dle[note] );
+			setMidiBuffer( 0x90, 0x3c+note+tOctave[hcbBlockConnectionPattern][hcbBlockID], 0x00 );
+			keyOnCounter[note]--;
+		}
 	}
 	touchCurrentStatus &= ~(0x01<<number);
 }
