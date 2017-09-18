@@ -65,6 +65,20 @@ static const uint8 TOUCH_EVENT_TABLE[2][MAX_TOUCH_PADS][2] = {
 	{ KBD_SW, 0x54 }, { KBD_SW, 0x55 }, { KBD_SW, 0x56 }, { KBD_SW, 0x57 },
 	{ KBD_SW, 0x58 }, { KBD_SW, 0x59 }, { KBD_SW, 0x5a }, { KBD_SW, 0x5b }
 },	
+{	//	coMIDI Mode ( coMIDI rev.2 )
+	{ KBD_SW, 0x48 }, { OCT_SW, 0xff }, { EFF_SW, 0x01 }, { PCN_SW, 0xff },
+	{ PCN_SW, 0x01 }, { VEL_SW, 0xff }, { VEL_SW, 0x01 }, { OCT_SW, 0x01 },
+	
+	{ KBD_SW, 0x40 }, { KBD_SW, 0x41 }, { KBD_SW, 0x42 }, { KBD_SW, 0x43 },
+	{ KBD_SW, 0x44 }, { KBD_SW, 0x45 }, { KBD_SW, 0x46 }, { KBD_SW, 0x47 },
+	
+	{ KBD_SW, 0x3f }, { KBD_SW, 0x3e }, { KBD_SW, 0x3d }, { KBD_SW, 0x3c },
+	{ KBD_SW, 0x3b }, { KBD_SW, 0x3a }, { KBD_SW, 0x39 }, { KBD_SW, 0x38 },
+	
+	{ KBD_SW, 0x37 }, { KBD_SW, 0x36 }, { KBD_SW, 0x35 }, { KBD_SW, 0x34 },
+	{ KBD_SW, 0x33 }, { KBD_SW, 0x32 }, { KBD_SW, 0x31 }, { KBD_SW, 0x30 }
+}
+#if 0	// coMIDI rev.1
 {	//	coMIDI Mode
 	{ KBD_SW, 0x30 }, { KBD_SW, 0x31 }, { KBD_SW, 0x32 }, { KBD_SW, 0x33 },
 	{ KBD_SW, 0x34 }, { KBD_SW, 0x35 }, { KBD_SW, 0x36 }, { KBD_SW, 0x37 },
@@ -78,6 +92,7 @@ static const uint8 TOUCH_EVENT_TABLE[2][MAX_TOUCH_PADS][2] = {
 	{ OCT_SW, 0x01 }, { VEL_SW, 0x01 }, { VEL_SW, 0xff }, { PCN_SW, 0x01 },
 	{ PCN_SW, 0xff }, { EFF_SW, 0x01 }, { OCT_SW, 0xff }, { KBD_SW, 0x48 }
 }
+#endif
 };
 static const uint8 VELCITY_TABLE[5] = { 60, 80, 100, 114, 127 };
 

@@ -56,14 +56,22 @@ void tm32_usbMidiOut( uint8 length, uint8* buf )
 //---------------------------------------------------------
 //			PORT
 //---------------------------------------------------------
-void tm32_p6_1_Hi( void ){ Pin_1_Write(1); }
-void tm32_p6_1_Lo( void ){ Pin_1_Write(0); }
-void tm32_p6_2_Hi( void ){ Pin_2_Write(1); }
-void tm32_p6_2_Lo( void ){ Pin_2_Write(0); }
-void tm32_p6_3_Hi( void ){ Pin_3_Write(1); }
-void tm32_p6_3_Lo( void ){ Pin_3_Write(0); }
-void tm32_p6_4_Hi( void ){ Pin_4_Write(1); }
-void tm32_p6_4_Lo( void ){ Pin_4_Write(0); }
+#ifndef NO_USE_P50_AS_PORTI
+void tm32_p6_1_Hi( void ){	Pin_1_Write(1);}
+void tm32_p6_1_Lo( void ){	Pin_1_Write(0);}
+#endif
+#ifndef NO_USE_P51_AS_PORTI
+void tm32_p6_2_Hi( void ){	Pin_2_Write(1);}
+void tm32_p6_2_Lo( void ){	Pin_2_Write(0);}
+#endif
+#ifndef NO_USE_P52_AS_PORTI
+void tm32_p6_3_Hi( void ){	Pin_3_Write(1);}
+void tm32_p6_3_Lo( void ){	Pin_3_Write(0);}
+#endif
+#ifndef NO_USE_P53_AS_PORTI
+void tm32_p6_4_Hi( void ){	Pin_4_Write(1);}
+void tm32_p6_4_Lo( void ){	Pin_4_Write(0);}
+#endif
 uint8 tm32_p7_1( void ){ return Pin_5_Read();}
 uint8 tm32_p7_2( void ){ return Pin_6_Read();}
 uint8 tm32_p7_3( void ){ return Pin_7_Read();}
@@ -82,10 +90,18 @@ void tm32_initLib( void )
 	midiDataByte1 = 0;
 	uartMidiCount = 0;
 
+#ifndef NO_USE_P50_AS_PORTI
 	tm32_p6_1_Lo();
+#endif
+#ifndef NO_USE_P51_AS_PORTI	
 	tm32_p6_2_Lo();
+#endif
+#ifndef NO_USE_P52_AS_PORTI	
 	tm32_p6_3_Lo();
+#endif
+#ifndef NO_USE_P53_AS_PORTI
 	tm32_p6_4_Lo();
+#endif
 }						
 //---------------------------------------------------------
 //		Touch Sense Event
