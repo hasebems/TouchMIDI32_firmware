@@ -1,7 +1,7 @@
 /* ========================================
  *
  *	tm32_hcb4.c
- *		description: HCB4 ( HoneycombBell Version 4 )
+ *		description: HCB4 ( HoneycombBell Revision 4 )
  *
  *	Copyright(c)2017 Masahiko Hasebe at Kigakudoh
  *  This software is released under the MIT License, see LICENSE.txt
@@ -35,6 +35,9 @@ enum SW_TYPE {
 //---------------------------------------------------------
 //			Variables
 //---------------------------------------------------------
+//	Start Terminal or Normal Block
+static bool			hcbNormalBlock;
+
 //	HCB config & state
 static bool			hcbActive;
 static uint8_t		hcbBlockID;
@@ -62,6 +65,10 @@ static bool			event4msec;
 static uint32_t		counter10msec;
 static uint32_t		systemTimerStkFor10msec;
 static uint32_t		systemTimerStkFor4msec;
+static uint32_t		nextBeatCounter;
+static uint32_t		durationTimeForTempo;
+static uint8_t		beatNumber;
+
 
 static uint32_t		touchCurrentStatus;
 static uint8_t		keyOnCounter[MAX_CELL];	//	(0 - 3)  0-2:keyon counter, 3:keyon at the same time
@@ -99,10 +106,120 @@ static const int8_t tMaxBlock[MAX_CONNECTION_PTN] =
 	0,	1,	2,	2,	3,	3,	4,	4,	4,	5,	5,	6,	6,	6,	6
 };
 //---------------------------------------------------------
+uint16_t tLedPattern[2][4][8] = {	
+	
+//	Pattern 1
+{{	0b0000000000000111,	//	block 1, beat 1
+	0b0000000000111000,	//	beat 2
+	0b0000000111000000,	//	beat 3
+	0b0000111000000000,	//	beat 4
+	0b0000000000000111,	//	beat 5
+	0b0000000000111000,	//	beat 6
+	0b0000000111000000,	//	beat 7
+	0b0000111000000000},//	beat 8
+{	0b0000000000000111,	//	block 2, beat 1
+	0b0000000000111000,
+	0b0000000111000000,
+	0b0000111000000000,
+	0b0000000000000111,
+	0b0000000000111000,
+	0b0000000111000000,
+	0b0000111000000000 },
+{	0b0000000000000111,	//	block 3, beat 1
+	0b0000000000111000,
+	0b0000000111000000,
+	0b0000111000000000,
+	0b0000000000000111,
+	0b0000000000111000,
+	0b0000000111000000,
+	0b0000111000000000 },
+{	0b0000000000000111,	//	block 4, beat 1
+	0b0000000000111000,
+	0b0000000111000000,
+	0b0000111000000000,
+	0b0000000000000111,
+	0b0000000000111000,
+	0b0000000111000000,
+	0b0000111000000000 }},
+
+//	pattern 2
+{{	0b0000111000000000,	//	block 1, beat 1
+	0b0000000111000000,
+	0b0000000000111000,
+	0b0000000000000111,
+	0b0000000000000111,
+	0b0000000000111000,
+	0b0000000111000000,
+	0b0000111000000000 },
+{	0b0000111000000000,	//	block 2, beat 1
+	0b0000000111000000,
+	0b0000000000111000,
+	0b0000000000000111,
+	0b0000000000000111,
+	0b0000000000111000,
+	0b0000000111000000,
+	0b0000111000000000 },
+{	0b0000000000000111,	//	block 3, beat 1
+	0b0000000000111000,
+	0b0000000111000000,
+	0b0000111000000000,
+	0b0000000000000111,
+	0b0000000000111000,
+	0b0000000111000000,
+	0b0000111000000000 },
+{	0b0000000000000111,	//	block 4, beat 1
+	0b0000000000111000,
+	0b0000000111000000,
+	0b0000111000000000,
+	0b0000000000000111,
+	0b0000000000111000,
+	0b0000000111000000,
+	0b0000111000000000 }}
+};
+
+
+//---------------------------------------------------------
 //			Interrupt
 //---------------------------------------------------------
 void tm32_intrpt(void){}
 
+//---------------------------------------------------------
+//			Set MIDI Buffer
+//---------------------------------------------------------
+static void setMidiBuffer( uint8 statusByte, uint8 secondByte, uint8 thirdByte )
+{
+	uint8	midiMsg[3];
+//	uint8	midiStatus = statusByte & 0xf0;
+	midiMsg[0] = statusByte;
+	midiMsg[1] = secondByte;
+	midiMsg[2] = thirdByte;
+	tm32_uartMidiOut( 3, midiMsg );
+}
+//---------------------------------------------------------
+static void setUsbMidiBuffer( uint8 statusByte, uint8 secondByte, uint8 thirdByte )
+{
+	uint8	midiMsg[3];
+	uint8	midiStatus = statusByte & 0xf0;
+	midiMsg[0] = statusByte;
+	midiMsg[1] = secondByte;
+	midiMsg[2] = thirdByte;
+	
+	if (( 0x90 == midiStatus ) || ( 0xa0 == midiStatus )){
+		tm32_usbMidiOut( 3, midiMsg );
+	}
+}
+//---------------------------------------------------------
+static void changeLedPattern( uint8 ptn )
+{
+	int		i,j;
+
+	for( j=0; j<4; j++ ){
+		for( i=0; i<8; i++ ){
+			uint16_t ledPtn = tLedPattern[ptn][j][i];
+			setMidiBuffer( 0xe0 | (j+1), (uint8)(ledPtn & 0x003f), (uint8)((ledPtn & 0x0fc0) >> 6) );			
+		}
+	}
+}
 //---------------------------------------------------------
 //			Initialize
 //---------------------------------------------------------
@@ -129,14 +246,14 @@ void tm32_init( void )
 	hcbLightPatternRcvTime = 0;
 	beatOn = false;
 
-	hcbLightPattern[0] = 0b0000000000000111;
-	hcbLightPattern[1] = 0b0000000000111000;
-	hcbLightPattern[2] = 0b0000000111000000;
-	hcbLightPattern[3] = 0b0000111000000000;
-	hcbLightPattern[4] = 0b0000000000000111;
-	hcbLightPattern[5] = 0b0000000000111000;
-	hcbLightPattern[6] = 0b0000000111000000;
-	hcbLightPattern[7] = 0b0000111000000000;
+	hcbLightPattern[0] = tLedPattern[0][0][0];
+	hcbLightPattern[1] = tLedPattern[0][0][1];
+	hcbLightPattern[2] = tLedPattern[0][0][2];
+	hcbLightPattern[3] = tLedPattern[0][0][3];
+	hcbLightPattern[4] = tLedPattern[0][0][4];
+	hcbLightPattern[5] = tLedPattern[0][0][5];
+	hcbLightPattern[6] = tLedPattern[0][0][6];
+	hcbLightPattern[7] = tLedPattern[0][0][7];
 	
 	for ( i=0; i<DOREMI_MAX; i++ ){
 		DLE_init(&dle[i]);
@@ -147,6 +264,9 @@ void tm32_init( void )
 	systemTimerStkFor4msec = tm32_systemTimer+16;
 	counter10msec = 0;
 	touchCurrentStatus = 0;
+	durationTimeForTempo = 500;
+	nextBeatCounter = 1000;
+	beatNumber = 0;
 	
 	for ( i=0; i<MAX_CELL; i++ ){
 		keyOnCounter[i] = 0;
@@ -159,44 +279,107 @@ void tm32_init( void )
 
 	tm32_p6_3_Lo();
 	tm32_p6_4_Lo();
+
+	//	Normal Block or not
+	hcbNormalBlock = true;
+	if ( tm32_p7_1() == 0 ){
+		ada88_write(18);
+		
+		//	Start Terminal
+		hcbNormalBlock = false;
+		hcbActive = true;
+		
+		// Light Pattern, Block Connection Pattern, -> setMidiBuffer();
+		setMidiBuffer( 0xb0, 0x52, 0x08 );
+		changeLedPattern(0);
+	}
 }
 //---------------------------------------------------------
-//			Set MIDI Buffer
+//			HCB No Active
 //---------------------------------------------------------
-static void setMidiBuffer( uint8 statusByte, uint8 secondByte, uint8 thirdByte )
+void setHcbNoActive( void )
 {
-	uint8	midiMsg[3];
-	uint8	midiStatus = statusByte & 0xf0;
-	midiMsg[0] = statusByte;
-	midiMsg[1] = secondByte;
-	midiMsg[2] = thirdByte;
+	int i;
+	uint16_t bitPtn = 0x0001;
+	hcbActive = false;
+	for ( i=0; i<MAX_CELL; i++ ){
+		if ( touchCurrentStatus & bitPtn ){
+			//	All Key Off
+			setMidiBuffer( 0x90, 0x3c+i+tOctave[hcbBlockConnectionPattern][hcbBlockID], 0x00 );
+		}
+		bitPtn <<= 1;
+	}
+}
+//---------------------------------------------------------
+//			get Each Message
+//---------------------------------------------------------
+void updateBeat( uint8_t id, uint8_t beat )
+{
+	uint8_t	myId = (id & 0x0f) + 1;
+	hcbNextBeat = beat;
+	hcbCounterPerBeat = 0; // counter clear
+	beatOn = true;
 	
-	if (( 0x90 == midiStatus ) || ( 0xa0 == midiStatus )){
-		tm32_usbMidiOut( 3, midiMsg );
+	uint8_t maxId = tMaxBlock[hcbBlockConnectionPattern];
+	if ( myId > maxId ){
+		setHcbNoActive();
 	}
-	tm32_uartMidiOut( 3, midiMsg );
+	else {
+		hcbActive = true;
+		hcbBlockID = myId;
+	}
+	
+	//	Send Beat
+	setMidiBuffer( 0xb0 | hcbBlockID, 0x53, beat );
+
+	//	Check Beat (debug)
+	if ( beat & 0x01 ){ tm32_p6_3_Hi();}
+	else { tm32_p6_3_Lo(); }
 }
 //---------------------------------------------------------
-//			Loop
-//---------------------------------------------------------
-void generateTimeEvent( void )
+void getLightPattern( uint16_t ptn )
 {
-	if ( systemTimerStkFor10msec < tm32_systemTimer ){
-		event10msec = true;
-		systemTimerStkFor10msec += 40;
-		counter10msec++;
+	if ( hcbLightPatternRcvMode == true ){
+		hcbLightPatternRcvModeCounter++;
+		if ( MAX_BEAT <= hcbLightPatternRcvModeCounter ){
+			//	over beat
+			hcbLightPatternRcvMode = false;
+		}
+		else {
+			//	set Light Pattern
+			hcbLightPattern[hcbLightPatternRcvModeCounter] = ptn;
+			hcbLightPatternRcvTime = 0;
+		}
 	}
 	else {
-		event10msec = false;
-	}
-	if ( systemTimerStkFor4msec < tm32_systemTimer ){
-		event4msec = true;
-		systemTimerStkFor4msec += 16;
-	}
-	else {
-		event4msec = false;
+		//	set Light Pattern ( beat == 0 )
+		hcbLightPatternRcvMode = true;
+		hcbLightPatternRcvModeCounter = 0;
+		hcbLightPatternRcvTime = 0;
+		hcbLightPattern[0] = ptn;
 	}
 }
+//---------------------------------------------------------
+//			Generate Beat
+//---------------------------------------------------------
+void generateBeat( void )
+{
+	if ( nextBeatCounter <= tm32_systemTimer/4 ){
+		hcbNextBeat = beatNumber;
+		hcbCounterPerBeat = 0; // counter clear
+		beatOn = true;
+
+		//	Send Beat
+		setMidiBuffer( 0xb0, 0x53, beatNumber );
+		ada88_writeNumber( beatNumber );
+
+		beatNumber++;
+		if ( 8 <= beatNumber ){ beatNumber = 0; }
+		nextBeatCounter = tm32_systemTimer/4 + durationTimeForTempo;
+	}
+}
+//---------------------------------------------------------
+//			LED
 //---------------------------------------------------------
 void makeLedDisplayBeats( uint8_t cell, uint16_t brightness ) 
 {
@@ -268,6 +451,27 @@ void lighteningLed( void )
 	hcbCrntBeat = hcbNextBeat;
 }
 //---------------------------------------------------------
+//			Loop
+//---------------------------------------------------------
+void generateTimeEvent( void )
+{
+	if ( systemTimerStkFor10msec < tm32_systemTimer ){
+		event10msec = true;
+		systemTimerStkFor10msec += 40;
+		counter10msec++;
+	}
+	else {
+		event10msec = false;
+	}
+	if ( systemTimerStkFor4msec < tm32_systemTimer ){
+		event4msec = true;
+		systemTimerStkFor4msec += 16;
+	}
+	else {
+		event4msec = false;
+	}
+}
+//---------------------------------------------------------
 void tm32_loop( void )
 {
 	//	Generate Time Event
@@ -281,9 +485,15 @@ void tm32_loop( void )
 		}
 	}
 
+	// Generate Beat
+	if ( hcbNormalBlock == false ){
+		//	only Start Terminal
+		generateBeat();
+	}
+	
 	// Full Color LED lighting
 	lighteningLed();
-	
+
 	//	display warning
 	if ( tm32_i2cErrCode != 0 ){
 		//	Warning
@@ -296,70 +506,7 @@ void tm32_loop( void )
 	}
 }
 //---------------------------------------------------------
-//			HCB No Active
-//---------------------------------------------------------
-void setHcbNoActive( void )
-{
-	int i;
-	uint16_t bitPtn = 0x0001;
-	hcbActive = false;
-	for ( i=0; i<MAX_CELL; i++ ){
-		if ( touchCurrentStatus & bitPtn ){
-			//	All Key Off
-			setMidiBuffer( 0x90, 0x3c+i+tOctave[hcbBlockConnectionPattern][hcbBlockID], 0x00 );
-		}
-		bitPtn <<= 1;
-	}
-}
-//---------------------------------------------------------
 //			Receive UART MIDI
-//---------------------------------------------------------
-void getBeat( uint8_t id, uint8_t beat )
-{
-	uint8_t	myId = (id & 0x0f) + 1;
-	hcbNextBeat = beat;
-	hcbCounterPerBeat = 0; // counter clear
-	beatOn = true;
-	
-	uint8_t maxId = tMaxBlock[hcbBlockConnectionPattern];
-	if ( myId > maxId ){
-		setHcbNoActive();
-	}
-	else {
-		hcbActive = true;
-		hcbBlockID = myId;
-	}
-	
-	//	Send Beat
-	setMidiBuffer( 0xb0 | hcbBlockID, 0x53, beat );
-
-	//	Check Beat (debug)
-	if ( beat & 0x01 ){ tm32_p6_3_Hi();}
-	else { tm32_p6_3_Lo(); }
-}
-//---------------------------------------------------------
-void getLightPattern( uint16_t ptn )
-{
-	if ( hcbLightPatternRcvMode == true ){
-		hcbLightPatternRcvModeCounter++;
-		if ( MAX_BEAT <= hcbLightPatternRcvModeCounter ){
-			//	over beat
-			hcbLightPatternRcvMode = false;
-		}
-		else {
-			//	set Light Pattern
-			hcbLightPattern[hcbLightPatternRcvModeCounter] = ptn;
-			hcbLightPatternRcvTime = 0;
-		}
-	}
-	else {
-		//	set Light Pattern ( beat == 0 )
-		hcbLightPatternRcvMode = true;
-		hcbLightPatternRcvModeCounter = 0;
-		hcbLightPatternRcvTime = 0;
-		hcbLightPattern[0] = ptn;
-	}
-}
 //---------------------------------------------------------
 void tm32_rcvUart( int count, uint8_t* buf )
 {
@@ -371,26 +518,32 @@ void tm32_rcvUart( int count, uint8_t* buf )
 				break;	
 			}
 			case 0xb0:{
-				if ( 0x52 == *(buf+1) ){
-					//	block connection pattern
-					setHcbNoActive();
-					setMidiBuffer( 0xb0, 0x52, *(buf+2) );
-					hcbBlockConnectionPattern = *(buf+2);
-				}
-				else if ( 0x53 == *(buf+1) ){
-					//	beat signal
-					getBeat( *buf, *(buf+2));
+				if ( hcbNormalBlock == true ){
+					//	Normal Block
+					if ( 0x52 == *(buf+1) ){
+						//	block connection pattern
+						setHcbNoActive();
+						setMidiBuffer( 0xb0, 0x52, *(buf+2) );
+						hcbBlockConnectionPattern = *(buf+2);
+					}
+					else if ( 0x53 == *(buf+1) ){
+						//	beat signal
+						updateBeat( *buf, *(buf+2));
+					}
 				}
 				break;
 			}
 			case 0xe0:{
-				if ( (*buf & 0x0f) == hcbBlockID ){
-					uint16 ptn = ((uint16)*(buf+2))<<6;
-					ptn |= (uint16)*(buf+1);
-					getLightPattern( ptn );
-				}
-				else {
-					setMidiBuffer( *buf, *(buf+1), *(buf+2) );
+				if ( hcbNormalBlock == true ){
+					//	Normal Block
+					if ( (*buf & 0x0f) == hcbBlockID ){
+						uint16 ptn = ((uint16)*(buf+2))<<6;
+						ptn |= (uint16)*(buf+1);
+						getLightPattern( ptn );
+					}
+					else {
+						setMidiBuffer( *buf, *(buf+1), *(buf+2) );
+					}
 				}
 				break;
 			}
@@ -406,9 +559,17 @@ static const int tNode2Note[32] =
 //---------------------------------------------------------
 void setKeyOn( uint8_t note )
 {
+	uint8_t	midiNote = 0x3c+note+tOctave[hcbBlockConnectionPattern][hcbBlockID];
+	
 	DLE_on( &dle[note], &colorArray[note][0], note );
 	colorArrayEvent[note] = true;
-	setMidiBuffer( 0x90, 0x3c+note+tOctave[hcbBlockConnectionPattern][hcbBlockID], 0x7f );
+
+	if ( hcbNormalBlock == true ){
+		setMidiBuffer( 0x90, midiNote, 0x7f );
+	}
+	else {
+		setUsbMidiBuffer( 0x90, midiNote, 0x7f );
+	}
 
 	keyOnTimeStock[note] = counter10msec;
 	if ( keyOnCounter[note] < 2 ){ keyOnCounter[note]++;}
@@ -446,8 +607,14 @@ void tm32_touchOff( int number )
 			keyOnCounter[note] = 1;
 		}
 		else if ( keyOnCounter[note] != 0 ){
+			uint8_t midiNote = 0x3c+note+tOctave[hcbBlockConnectionPattern][hcbBlockID];
 			DLE_off( &dle[note] );
-			setMidiBuffer( 0x90, 0x3c+note+tOctave[hcbBlockConnectionPattern][hcbBlockID], 0x00 );
+			if ( hcbNormalBlock == true ){
+				setMidiBuffer( 0x90, midiNote, 0x00 );
+			}
+			else {
+				setUsbMidiBuffer( 0x90, midiNote, 0x00 );
+			}			
 			keyOnCounter[note]--;
 		}
 	}
