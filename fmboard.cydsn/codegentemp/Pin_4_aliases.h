@@ -1,5 +1,5 @@
 /*******************************************************************************
-* File Name: Pin_5.h  
+* File Name: Pin_4.h  
 * Version 2.20
 *
 * Description:
@@ -15,8 +15,8 @@
 * the software package with which this file was provided.
 *******************************************************************************/
 
-#if !defined(CY_PINS_Pin_5_ALIASES_H) /* Pins Pin_5_ALIASES_H */
-#define CY_PINS_Pin_5_ALIASES_H
+#if !defined(CY_PINS_Pin_4_ALIASES_H) /* Pins Pin_4_ALIASES_H */
+#define CY_PINS_Pin_4_ALIASES_H
 
 #include "cytypes.h"
 #include "cyfitter.h"
@@ -26,17 +26,17 @@
 /***************************************
 *              Constants        
 ***************************************/
-#define Pin_5_0			(Pin_5__0__PC)
-#define Pin_5_0_PS		(Pin_5__0__PS)
-#define Pin_5_0_PC		(Pin_5__0__PC)
-#define Pin_5_0_DR		(Pin_5__0__DR)
-#define Pin_5_0_SHIFT	(Pin_5__0__SHIFT)
-#define Pin_5_0_INTR	((uint16)((uint16)0x0003u << (Pin_5__0__SHIFT*2u)))
+#define Pin_4_0			(Pin_4__0__PC)
+#define Pin_4_0_PS		(Pin_4__0__PS)
+#define Pin_4_0_PC		(Pin_4__0__PC)
+#define Pin_4_0_DR		(Pin_4__0__DR)
+#define Pin_4_0_SHIFT	(Pin_4__0__SHIFT)
+#define Pin_4_0_INTR	((uint16)((uint16)0x0003u << (Pin_4__0__SHIFT*2u)))
 
-#define Pin_5_INTR_ALL	 ((uint16)(Pin_5_0_INTR))
+#define Pin_4_INTR_ALL	 ((uint16)(Pin_4_0_INTR))
 
 
-#endif /* End Pins Pin_5_ALIASES_H */
+#endif /* End Pins Pin_4_ALIASES_H */
 
 
 /* [] END OF FILE */

@@ -10,6 +10,10 @@
 */
 #include "tm32_lib.h"
 #include "tm32_i2cdev.h"
+#include "tm32_app.h"
+
+#include	"fmsd1.h"
+#include	"fmif.h"
 
 //---------------------------------------------------------
 //			Macros
@@ -28,7 +32,6 @@ enum SW_TYPE {
 
 //---------------------------------------------------------
 static void MIDIOutIndicator( void );
-
 
 //---------------------------------------------------------
 //			Variables
@@ -65,18 +68,18 @@ static const uint8 TOUCH_EVENT_TABLE[2][MAX_TOUCH_PADS][2] = {
 	{ KBD_SW, 0x54 }, { KBD_SW, 0x55 }, { KBD_SW, 0x56 }, { KBD_SW, 0x57 },
 	{ KBD_SW, 0x58 }, { KBD_SW, 0x59 }, { KBD_SW, 0x5a }, { KBD_SW, 0x5b }
 },	
-{	//	coMIDI Mode
-	{ KBD_SW, 0x30 }, { KBD_SW, 0x31 }, { KBD_SW, 0x32 }, { KBD_SW, 0x33 },
-	{ KBD_SW, 0x34 }, { KBD_SW, 0x35 }, { KBD_SW, 0x36 }, { KBD_SW, 0x37 },
+{	//	coMIDI Mode ( coMIDI rev.2 )
+	{ KBD_SW, 0x48 }, { OCT_SW, 0xff }, { EFF_SW, 0x01 }, { PCN_SW, 0xff },
+	{ PCN_SW, 0x01 }, { VEL_SW, 0xff }, { VEL_SW, 0x01 }, { OCT_SW, 0x01 },
 	
-	{ KBD_SW, 0x38 }, { KBD_SW, 0x39 }, { KBD_SW, 0x3a }, { KBD_SW, 0x3b },
-	{ KBD_SW, 0x3c }, { KBD_SW, 0x3d }, { KBD_SW, 0x3e }, { KBD_SW, 0x3f },
+	{ KBD_SW, 0x40 }, { KBD_SW, 0x41 }, { KBD_SW, 0x42 }, { KBD_SW, 0x43 },
+	{ KBD_SW, 0x44 }, { KBD_SW, 0x45 }, { KBD_SW, 0x46 }, { KBD_SW, 0x47 },
 	
-	{ KBD_SW, 0x47 }, { KBD_SW, 0x46 }, { KBD_SW, 0x45 }, { KBD_SW, 0x44 },
-	{ KBD_SW, 0x43 }, { KBD_SW, 0x42 }, { KBD_SW, 0x41 }, { KBD_SW, 0x40 },
+	{ KBD_SW, 0x3f }, { KBD_SW, 0x3e }, { KBD_SW, 0x3d }, { KBD_SW, 0x3c },
+	{ KBD_SW, 0x3b }, { KBD_SW, 0x3a }, { KBD_SW, 0x39 }, { KBD_SW, 0x38 },
 	
-	{ OCT_SW, 0x01 }, { VEL_SW, 0x01 }, { VEL_SW, 0xff }, { PCN_SW, 0x01 },
-	{ PCN_SW, 0xff }, { EFF_SW, 0x01 }, { OCT_SW, 0xff }, { KBD_SW, 0x48 }
+	{ KBD_SW, 0x37 }, { KBD_SW, 0x36 }, { KBD_SW, 0x35 }, { KBD_SW, 0x34 },
+	{ KBD_SW, 0x33 }, { KBD_SW, 0x32 }, { KBD_SW, 0x31 }, { KBD_SW, 0x30 }
 }
 };
 static const uint8 VELCITY_TABLE[5] = { 60, 80, 100, 114, 127 };
@@ -90,8 +93,10 @@ void tm32_init( void )
 	
 	tm32_init_i2cDevice();
 
-	//	SPI Initialize
-	SPI_Start();
+	//	SPI/SD1 Initialize
+	initSPI();
+	initSD1();
+	Fmdriver_init();
 	
 	//prsValue = 0;
 	//tempPrsValue = 0;
@@ -100,24 +105,13 @@ void tm32_init( void )
 
 	debugCounter = 0;
 
-	mode = 0;
 	for ( i=0; i<MAX_TOUCH_PADS; i++ ){ noteNumberStock[i] = 0;}
-	offsetVelocity = 4;
+	offsetVelocity = 2;
 	offsetOctave = 0;
 	pcNumber = 0;
 
 	//	Mode Check
-	mode = 0;
-//	tm32_p6_1_Lo();
-//	tm32_p6_2_Lo();
-//	tm32_p6_3_Lo();
-//	tm32_p6_4_Lo();
-	if (( tm32_p7_1() == 0 ) && ( tm32_p7_2() == 0 )){
-		mode = 1;		//	coMIDI Mode
-//		tm32_p6_2_Hi();	//	Power Indicator
-		offsetVelocity = 2;
-	}
-
+	mode = 1;
 }
 //---------------------------------------------------------
 //			Loop
@@ -139,23 +133,26 @@ void tm32_loop( void )
 		if ((( tm32_systemTimer & 0x00000100 ) == 0x00000100 ) && ( heartbeat == 0 )){
 			//tm32_p6_1_Lo(); tm32_p6_2_Hi(); tm32_p6_3_Lo(); tm32_p6_4_Hi();
 			heartbeat = 1;
+			//tm32_touchOn(0);
+			
 		}
 		if ((( tm32_systemTimer & 0x00000100 ) == 0x00000000 ) && ( heartbeat == 1 )){
 			//tm32_p6_1_Hi(); tm32_p6_2_Lo(); tm32_p6_3_Hi(); tm32_p6_4_Lo();
 			heartbeat = 0;
+			//tm32_touchOff(0);
 		}
 	}
 	else if ( mode == 1 ){
 		//	Octave LED
 		switch( offsetOctave ){
-		//	case -1: tm32_p6_1_Hi(); tm32_p6_4_Lo(); break;
-		//	case  0: tm32_p6_1_Lo(); tm32_p6_4_Lo(); break;
-		//	case  1: tm32_p6_1_Lo(); tm32_p6_4_Hi(); break;
+			case -1: tm32_p6_2_Hi(); tm32_p6_4_Lo(); break;
+			case  0: tm32_p6_2_Lo(); tm32_p6_4_Lo(); break;
+			case  1: tm32_p6_2_Lo(); tm32_p6_4_Hi(); break;
 			default: break;
 		}
 		if ( sentSignalTime+20 <= tm32_systemTimer ){
 			//	MIDI out Indicator
-		//	tm32_p6_3_Lo();
+			tm32_p6_3_Lo();
 		}
 	}
 }
@@ -171,7 +168,7 @@ void IncDebCnt( void )
 void MIDIOutIndicator( void )
 {
 	sentSignalTime = tm32_systemTimer;
-//	tm32_p6_3_Hi();
+	tm32_p6_3_Hi();
 }
 //---------------------------------------------------------
 void tm32_touchOn( int number )
@@ -187,6 +184,9 @@ void tm32_touchOn( int number )
 			noteNumberStock[number] = midiMsg[1];
 			tm32_usbMidiOut( 3, midiMsg );
 			MIDIOutIndicator();
+			Fmdriver_sendMidi(midiMsg[0]);
+			Fmdriver_sendMidi(midiMsg[1]);
+			Fmdriver_sendMidi(midiMsg[2]);
 			break;
 		}
 		case PCN_SW:{
@@ -196,6 +196,8 @@ void tm32_touchOn( int number )
 			midiMsg[0] = 0xc0;
 			midiMsg[1] = pcNumber;
 			tm32_usbMidiOut( 2, midiMsg );
+			Fmdriver_sendMidi(midiMsg[0]);
+			Fmdriver_sendMidi(midiMsg[1]);
 			MIDIOutIndicator();
 			break;
 		}
@@ -250,6 +252,10 @@ void tm32_touchOff( int number )
 			midiMsg[2] = 0;
 			tm32_usbMidiOut( 3, midiMsg );
 			MIDIOutIndicator();
+			Fmdriver_sendMidi(midiMsg[0]);
+			Fmdriver_sendMidi(midiMsg[1]);
+			Fmdriver_sendMidi(midiMsg[2]);
+
 			break;
 		}
 		case EFF_SW:{

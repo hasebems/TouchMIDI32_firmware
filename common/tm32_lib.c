@@ -15,11 +15,11 @@
 //---------------------------------------------------------
 //			TouchMIDI32 Variables
 //---------------------------------------------------------
-uint32_t	tm32_systemTimer;	//	<When 1 means 250usec>
+uint32_t	tm32_systemTimer;	//	<When 1 means 250usec/ see System Timer Configure "period:8" >
 								//	4 means 1msec, 4000 means 1sec, 240,000 means 1min, 14,400,000 means 1hour
 								//	345,600,000 means 1day, 32bit can measure about 4days.
 									
-								//	Disable <When 1 means 2msec>
+								//	Disable <When 1 means 2msec/ see System Timer Configure "period:64" >
 								//	500 means 1sec, 30,000 means 1min, 1,800,000 means 1hour, 
 								//	43,200,000 means 1day, 32bit(4,294,967,296) can measure about 99days.
 								//	This value is incremented by interrupt, don't write.
@@ -56,32 +56,43 @@ void tm32_usbMidiOut( uint8 length, uint8* buf )
 //---------------------------------------------------------
 //			PORT
 //---------------------------------------------------------
-#ifndef NO_USE_P50_AS_PORTI
+#ifndef P6_1_AS_PORT_INPUT
 void tm32_p6_1_Hi( void ){	Pin_1_Write(1);}
 void tm32_p6_1_Lo( void ){	Pin_1_Write(0);}
+#else
+uint8 tm32_p6_1( void ){ return Pin_5_Read();}
 #endif
-#ifndef NO_USE_P51_AS_PORTI
+#ifndef P6_2_AS_PORT_INPUT
 void tm32_p6_2_Hi( void ){	Pin_2_Write(1);}
 void tm32_p6_2_Lo( void ){	Pin_2_Write(0);}
+#else
+uint8 tm32_p6_2( void ){ return Pin_6_Read();}
 #endif
-#ifndef NO_USE_P52_AS_PORTI
+#ifndef P6_3_AS_PORT_INPUT
 void tm32_p6_3_Hi( void ){	Pin_3_Write(1);}
 void tm32_p6_3_Lo( void ){	Pin_3_Write(0);}
+#else
+uint8 tm32_p6_3( void ){ return Pin_7_Read();}
 #endif
-#ifndef NO_USE_P53_AS_PORTI
+#ifndef P6_4_AS_PORT_INPUT
 void tm32_p6_4_Hi( void ){	Pin_4_Write(1);}
 void tm32_p6_4_Lo( void ){	Pin_4_Write(0);}
+#else
+uint8 tm32_p6_4( void ){ return Pin_8_Read();}
 #endif
+
+#ifndef NO_USE_P7
 uint8 tm32_p7_1( void ){ return Pin_5_Read();}
 uint8 tm32_p7_2( void ){ return Pin_6_Read();}
 uint8 tm32_p7_3( void ){ return Pin_7_Read();}
 uint8 tm32_p7_4( void ){ return Pin_8_Read();}
+#endif
 
 //---------------------------------------------------------
 //			Initialize
 //---------------------------------------------------------
 void tm32_initLib( void )
-{
+{	
 	tm32_systemTimer = 0;
 	systemErr = 0;
 	
@@ -90,16 +101,16 @@ void tm32_initLib( void )
 	midiDataByte1 = 0;
 	uartMidiCount = 0;
 
-#ifndef NO_USE_P50_AS_PORTI
+#ifndef P6_1_AS_PORT_INPUT
 	tm32_p6_1_Lo();
 #endif
-#ifndef NO_USE_P51_AS_PORTI	
+#ifndef P6_2_AS_PORT_INPUT	
 	tm32_p6_2_Lo();
 #endif
-#ifndef NO_USE_P52_AS_PORTI	
+#ifndef P6_3_AS_PORT_INPUT	
 	tm32_p6_3_Lo();
 #endif
-#ifndef NO_USE_P53_AS_PORTI
+#ifndef P6_4_AS_PORT_INPUT
 	tm32_p6_4_Lo();
 #endif
 }						

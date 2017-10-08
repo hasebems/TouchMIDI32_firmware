@@ -37,8 +37,23 @@
       <Folder BuildType="STRICT" Path="C:\Users\Masahiko\Documents\PSoC Creator\TouchMIDI32_firmware\fmboard.cydsn">
         <Files Root="C:\Users\Masahiko\Documents\PSoC Creator\TouchMIDI32_firmware\fmboard.cydsn">
           <File BuildType="BUILD" Toolchain="">tm32_fmboard.c</File>
+          <File BuildType="BUILD" Toolchain="">fmasgn.c</File>
+          <File BuildType="BUILD" Toolchain="">fmif.c</File>
+          <File BuildType="BUILD" Toolchain="">fmnote.c</File>
+          <File BuildType="BUILD" Toolchain="">fmpart.c</File>
+          <File BuildType="BUILD" Toolchain="">fmsd1_psoc.c</File>
+          <File BuildType="BUILD" Toolchain="">fmtone.c</File>
+          <File BuildType="BUILD" Toolchain="">fmvoice.c</File>
           <File BuildType="BUILD" Toolchain="">cyapicallbacks.h</File>
           <File BuildType="BUILD" Toolchain="">tm32_app.h</File>
+          <File BuildType="BUILD" Toolchain="">fmasgn.h</File>
+          <File BuildType="BUILD" Toolchain="">fmif.h</File>
+          <File BuildType="BUILD" Toolchain="">fmnote.h</File>
+          <File BuildType="BUILD" Toolchain="">fmpart.h</File>
+          <File BuildType="BUILD" Toolchain="">fmsd1.h</File>
+          <File BuildType="BUILD" Toolchain="">fmtone.h</File>
+          <File BuildType="BUILD" Toolchain="">fmtype.h</File>
+          <File BuildType="BUILD" Toolchain="">fmvoice.h</File>
         </Files>
       </Folder>
       <Folder BuildType="STRICT" Path="C:\Users\Masahiko\Documents\PSoC Creator\TouchMIDI32_firmware\common">
@@ -94,6 +109,22 @@
           <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\cycodeshareimport.ld</File>
           <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\cycodeshareexport.ld</File>
           <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\cycodeshareimport.scat</File>
+          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Pin_1.c</File>
+          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Pin_1.h</File>
+          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Pin_1_aliases.h</File>
+          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Pin_1_PM.c</File>
+          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Pin_2.c</File>
+          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Pin_2.h</File>
+          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Pin_2_aliases.h</File>
+          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Pin_2_PM.c</File>
+          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Pin_3.c</File>
+          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Pin_3.h</File>
+          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Pin_3_aliases.h</File>
+          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Pin_3_PM.c</File>
+          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Pin_4.c</File>
+          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Pin_4.h</File>
+          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Pin_4_aliases.h</File>
+          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Pin_4_PM.c</File>
           <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\CapSense.h</File>
           <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\CapSense_Control.c</File>
           <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\CapSense_Processing.c</File>
@@ -188,22 +219,6 @@
           <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\MIDI_OUT.h</File>
           <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\MIDI_OUT_aliases.h</File>
           <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\MIDI_OUT_PM.c</File>
-          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Pin_5.c</File>
-          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Pin_5.h</File>
-          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Pin_5_aliases.h</File>
-          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Pin_5_PM.c</File>
-          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Pin_6.c</File>
-          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Pin_6.h</File>
-          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Pin_6_aliases.h</File>
-          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Pin_6_PM.c</File>
-          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Pin_7.c</File>
-          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Pin_7.h</File>
-          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Pin_7_aliases.h</File>
-          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Pin_7_PM.c</File>
-          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Pin_8.c</File>
-          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Pin_8.h</File>
-          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Pin_8_aliases.h</File>
-          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Pin_8_PM.c</File>
           <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Bootloadable_1.c</File>
           <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\Bootloadable_1.h</File>
           <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\EZI2C.c</File>

@@ -38,10 +38,16 @@ extern void tm32_p6_3_Hi( void );
 extern void tm32_p6_3_Lo( void );
 extern void tm32_p6_4_Hi( void );
 extern void tm32_p6_4_Lo( void );
-uint8 tm32_p7_1( void );
-uint8 tm32_p7_2( void );
-uint8 tm32_p7_3( void );
-uint8 tm32_p7_4( void );
+
+extern uint8 tm32_p6_1( void );
+extern uint8 tm32_p6_2( void );
+extern uint8 tm32_p6_3( void );
+extern uint8 tm32_p6_4( void );
+
+extern uint8 tm32_p7_1( void );
+extern uint8 tm32_p7_2( void );
+extern uint8 tm32_p7_3( void );
+extern uint8 tm32_p7_4( void );
 
 //---------------------------------------------------------
 //			TouchMIDI32 External Functions

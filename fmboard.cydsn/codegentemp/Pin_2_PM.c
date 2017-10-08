@@ -1,5 +1,5 @@
 /*******************************************************************************
-* File Name: Pin_7.c  
+* File Name: Pin_2.c  
 * Version 2.20
 *
 * Description:
@@ -15,13 +15,13 @@
 *******************************************************************************/
 
 #include "cytypes.h"
-#include "Pin_7.h"
+#include "Pin_2.h"
 
-static Pin_7_BACKUP_STRUCT  Pin_7_backup = {0u, 0u, 0u};
+static Pin_2_BACKUP_STRUCT  Pin_2_backup = {0u, 0u, 0u};
 
 
 /*******************************************************************************
-* Function Name: Pin_7_Sleep
+* Function Name: Pin_2_Sleep
 ****************************************************************************//**
 *
 * \brief Stores the pin configuration and prepares the pin for entering chip 
@@ -39,30 +39,30 @@ static Pin_7_BACKUP_STRUCT  Pin_7_backup = {0u, 0u, 0u};
 *  deep-sleep/hibernate modes.
 *
 * \funcusage
-*  \snippet Pin_7_SUT.c usage_Pin_7_Sleep_Wakeup
+*  \snippet Pin_2_SUT.c usage_Pin_2_Sleep_Wakeup
 *******************************************************************************/
-void Pin_7_Sleep(void)
+void Pin_2_Sleep(void)
 {
-    #if defined(Pin_7__PC)
-        Pin_7_backup.pcState = Pin_7_PC;
+    #if defined(Pin_2__PC)
+        Pin_2_backup.pcState = Pin_2_PC;
     #else
         #if (CY_PSOC4_4200L)
             /* Save the regulator state and put the PHY into suspend mode */
-            Pin_7_backup.usbState = Pin_7_CR1_REG;
-            Pin_7_USB_POWER_REG |= Pin_7_USBIO_ENTER_SLEEP;
-            Pin_7_CR1_REG &= Pin_7_USBIO_CR1_OFF;
+            Pin_2_backup.usbState = Pin_2_CR1_REG;
+            Pin_2_USB_POWER_REG |= Pin_2_USBIO_ENTER_SLEEP;
+            Pin_2_CR1_REG &= Pin_2_USBIO_CR1_OFF;
         #endif
     #endif
-    #if defined(CYIPBLOCK_m0s8ioss_VERSION) && defined(Pin_7__SIO)
-        Pin_7_backup.sioState = Pin_7_SIO_REG;
+    #if defined(CYIPBLOCK_m0s8ioss_VERSION) && defined(Pin_2__SIO)
+        Pin_2_backup.sioState = Pin_2_SIO_REG;
         /* SIO requires unregulated output buffer and single ended input buffer */
-        Pin_7_SIO_REG &= (uint32)(~Pin_7_SIO_LPM_MASK);
+        Pin_2_SIO_REG &= (uint32)(~Pin_2_SIO_LPM_MASK);
     #endif  
 }
 
 
 /*******************************************************************************
-* Function Name: Pin_7_Wakeup
+* Function Name: Pin_2_Wakeup
 ****************************************************************************//**
 *
 * \brief Restores the pin configuration that was saved during Pin_Sleep().
@@ -75,22 +75,22 @@ void Pin_7_Sleep(void)
 *  None
 *  
 * \funcusage
-*  Refer to Pin_7_Sleep() for an example usage.
+*  Refer to Pin_2_Sleep() for an example usage.
 *******************************************************************************/
-void Pin_7_Wakeup(void)
+void Pin_2_Wakeup(void)
 {
-    #if defined(Pin_7__PC)
-        Pin_7_PC = Pin_7_backup.pcState;
+    #if defined(Pin_2__PC)
+        Pin_2_PC = Pin_2_backup.pcState;
     #else
         #if (CY_PSOC4_4200L)
             /* Restore the regulator state and come out of suspend mode */
-            Pin_7_USB_POWER_REG &= Pin_7_USBIO_EXIT_SLEEP_PH1;
-            Pin_7_CR1_REG = Pin_7_backup.usbState;
-            Pin_7_USB_POWER_REG &= Pin_7_USBIO_EXIT_SLEEP_PH2;
+            Pin_2_USB_POWER_REG &= Pin_2_USBIO_EXIT_SLEEP_PH1;
+            Pin_2_CR1_REG = Pin_2_backup.usbState;
+            Pin_2_USB_POWER_REG &= Pin_2_USBIO_EXIT_SLEEP_PH2;
         #endif
     #endif
-    #if defined(CYIPBLOCK_m0s8ioss_VERSION) && defined(Pin_7__SIO)
-        Pin_7_SIO_REG = Pin_7_backup.sioState;
+    #if defined(CYIPBLOCK_m0s8ioss_VERSION) && defined(Pin_2__SIO)
+        Pin_2_SIO_REG = Pin_2_backup.sioState;
     #endif
 }
 

@@ -168,7 +168,7 @@ void SystemTimer_Wakeup(void)        ;
 *    Initialial Parameter Constants
 ***************************************/
 
-#define SystemTimer_INIT_PERIOD             63u
+#define SystemTimer_INIT_PERIOD             7u
 #define SystemTimer_INIT_CAPTURE_MODE       ((uint8)((uint8)0u << SystemTimer_CTRL_CAP_MODE_SHIFT))
 #define SystemTimer_INIT_TRIGGER_MODE       ((uint8)((uint8)0u << SystemTimer_CTRL_TRIG_MODE_SHIFT))
 #if (SystemTimer_UsingFixedFunction)
