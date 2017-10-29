@@ -21,8 +21,8 @@
 #define		MAX_BEAT		8
 #define		MAX_CELL		12
 #define		MAX_BEAT_LIGHTING_PERIOD	20
-#define		MAX_CONNECTION_PTN			15
-#define		MAX_ID						6
+#define		MAX_CONNECTION_PTN			9
+#define		MAX_ID						4
 //---------------------------------------------------------
 //	for TOUCH_EVENT_TABLE
 enum SW_TYPE {
@@ -51,6 +51,8 @@ static bool			hcbLightPatternRcvMode;
 static uint8_t		hcbLightPatternRcvModeCounter;
 static uint8_t		hcbLightPatternRcvTime;
 static uint16_t		hcbLightPattern[MAX_BEAT];
+static uint8_t		hcbLightPatternNum;
+static bool			hcbLightPatternChangeEvent;
 
 //	managing LED
 static uint16_t 	colorArray[MAX_CELL][VOLUME_ARRAY_MAX];
@@ -69,11 +71,14 @@ static uint32_t		nextBeatCounter;
 static uint32_t		durationTimeForTempo;
 static uint8_t		beatNumber;
 
-
 static uint32_t		touchCurrentStatus;
 static uint8_t		keyOnCounter[MAX_CELL];	//	(0 - 3)  0-2:keyon counter, 3:keyon at the same time
 static uint32_t		keyOnTimeStock[MAX_CELL];
 static int			debugCounter;
+
+//	display
+static uint8_t		displayMode;	//	0:tempo, 1:pattern
+static uint32_t		displayNumber;
 
 static DLE 			dle[DOREMI_MAX];
 
@@ -82,34 +87,29 @@ static DLE 			dle[DOREMI_MAX];
 //---------------------------------------------------------
 
 //---------------------------------------------------------
-static const int8_t tOctave[MAX_CONNECTION_PTN][MAX_ID+1] = {
-// ID   0	1   2   3   4   5   6
-	{	0,	0,	0,	0,	0,	0,	0	},	//	not work
-	{	0,	0,	0,	0,	0,	0,	0	},	//	1
-	{	0,	12,	0,	0,	0,	0,	0	},	//	2 left-right
-	{	0,	0,	0,	0,	0,	0,	0	},	//	2 upper-lower
-	{	0,	12,	0,	-12,0,	0,	0	},	//	3 left-right
-	{	0,	0,	0,	0,	0,	0,	0	},	//	3 upper-lower
-	{	0,	24,	12,	0,	-12,0,	0	},	//	4 left-right
-	{	0,	0,	0,	0,	0,	0,	0	},	//	4 upper-lower
-	{	0,	12,	12,	0,	0,	0,	0	},	//	4 2*2
-	{	0,	24,	12,	0,	-12,-24,0	},	//	5 left-right
-	{	0,	0,	0,	0,	0,	0,	0	},	//	5 upper-lower
-	{	0,	36,	24,	12,	0,	-12,-24	},	//	6 left-right
-	{	0,	0,	0,	0,	0,	0,	0	},	//	6 upper-lower
-	{	0,	12,	12,	0,	0,	-12,-12	},	//	6 2*3
-	{	0,	12,	12,	12,	0,	0,	0	}	//	6 3*2
+static const int8_t tOctave[MAX_CONNECTION_PTN][MAX_ID] = {
+	
+// ID   0	1   2   3   4   5   6			ID=0: Start Terminal
+	{	0,	0,	0,	0	},	//	0: not work
+	{	0,	0,	0,	0	},	//	1: 1
+	{	0,	12,	0,	0	},	//	2: 2 left-right
+	{	0,	0,	0,	0	},	//	3: 2 upper-lower
+	{	-12,0,	12,	0	},	//	4: 3 left-right
+	{	0,	0,	0,	0	},	//	5: 3 upper-lower
+	{	-12,0,	12, 24	},	//	6: left-right
+	{	0,	0,	0,	0	},	//	7: upper-lower
+	{	0,	12,	12,	0	}	//	8: 4 2*2
 };
 //---------------------------------------------------------
 static const int8_t tMaxBlock[MAX_CONNECTION_PTN] = 
 {
-	0,	1,	2,	2,	3,	3,	4,	4,	4,	5,	5,	6,	6,	6,	6
+	0,	1,	2,	2,	3,	3,	4,	4,	4
 };
 //---------------------------------------------------------
-uint16_t tLedPattern[2][4][8] = {	
+uint16_t tLedPattern[2][MAX_ID][MAX_BEAT] = {	
 	
-//	Pattern 1
-{{	0b0000000000000111,	//	block 1, beat 1
+//	Pattern 1	Line
+{{	0b0000000000000111,	//	block ID 0, beat 1
 	0b0000000000111000,	//	beat 2
 	0b0000000111000000,	//	beat 3
 	0b0000111000000000,	//	beat 4
@@ -117,7 +117,7 @@ uint16_t tLedPattern[2][4][8] = {
 	0b0000000000111000,	//	beat 6
 	0b0000000111000000,	//	beat 7
 	0b0000111000000000},//	beat 8
-{	0b0000000000000111,	//	block 2, beat 1
+{	0b0000000000000111,	//	block ID 1, beat 1
 	0b0000000000111000,
 	0b0000000111000000,
 	0b0000111000000000,
@@ -125,58 +125,93 @@ uint16_t tLedPattern[2][4][8] = {
 	0b0000000000111000,
 	0b0000000111000000,
 	0b0000111000000000 },
-{	0b0000000000000111,	//	block 3, beat 1
+{	0b0000111000000000, //	block ID 2, beat 1
+	0b0000000000000111,	
 	0b0000000000111000,
 	0b0000000111000000,
 	0b0000111000000000,
 	0b0000000000000111,
 	0b0000000000111000,
-	0b0000000111000000,
-	0b0000111000000000 },
-{	0b0000000000000111,	//	block 4, beat 1
+	0b0000000111000000 },
+{	0b0000111000000000,	//	block ID 3, beat 1
+	0b0000000000000111,
 	0b0000000000111000,
 	0b0000000111000000,
 	0b0000111000000000,
 	0b0000000000000111,
 	0b0000000000111000,
-	0b0000000111000000,
-	0b0000111000000000 }},
+	0b0000000111000000}},
 
-//	pattern 2
-{{	0b0000111000000000,	//	block 1, beat 1
-	0b0000000111000000,
-	0b0000000000111000,
-	0b0000000000000111,
+//	pattern 2	bubble
+{{	0b0000000000010000,	//	block ID 0, beat 1
+	0b0000000011101110,
+	0b0000011100000001,
+	0b0000100000000000,
+	0b0000000000000000,
+	0b0000000000000000,
+	0b0000000000000000,
+	0b0000000000000000 },
+{	0b0000000000000000,	//	block ID 1, beat 1
+	0b0000000000000000,
+	0b0000000000000000,
+	0b0000000000000011,
+	0b0000000000011100,
+	0b0000000011100000,
+	0b0000011100000000,
+	0b0000100000000000 },
+{	0b0000000000000000,	//	block ID 2, beat 1
+	0b0000000000000000,
+	0b0000000000000000,
+	0b0000000000000000,
 	0b0000000000000111,
 	0b0000000000111000,
 	0b0000000111000000,
 	0b0000111000000000 },
-{	0b0000111000000000,	//	block 2, beat 1
-	0b0000000111000000,
-	0b0000000000111000,
-	0b0000000000000111,
-	0b0000000000000111,
-	0b0000000000111000,
-	0b0000000111000000,
-	0b0000111000000000 },
-{	0b0000000000000111,	//	block 3, beat 1
-	0b0000000000111000,
-	0b0000000111000000,
-	0b0000111000000000,
-	0b0000000000000111,
-	0b0000000000111000,
-	0b0000000111000000,
-	0b0000111000000000 },
-{	0b0000000000000111,	//	block 4, beat 1
-	0b0000000000111000,
-	0b0000000111000000,
-	0b0000111000000000,
-	0b0000000000000111,
-	0b0000000000111000,
-	0b0000000111000000,
-	0b0000111000000000 }}
+{	0b0000000000000000,	//	block ID 3, beat 1
+	0b0000000000000000,
+	0b0000000100100100,
+	0b0000110010010010,
+	0b0001001001001001,
+	0b0000000000000000,
+	0b0000000000000000,
+	0b0000000000000000 }}
 };
 
+#if 0 //	templete
+//	pattern 2	bubble
+{{	0b0000000000000000,	//	block ID 0, beat 1
+	0b0000000000000000,
+	0b0000000000000000,
+	0b0000000000000000,
+	0b0000000000000000,
+	0b0000000000000000,
+	0b0000000000000000,
+	0b0000000000000000 },
+{	0b0000000000000000,	//	block ID 1, beat 1
+	0b0000000000000000,
+	0b0000000000000000,
+	0b0000000000000000,
+	0b0000000000000000,
+	0b0000000000000000,
+	0b0000000000000000,
+	0b0000000000000000 },
+{	0b0000000000000000,	//	block ID 2, beat 1
+	0b0000000000000000,
+	0b0000000000000000,
+	0b0000000000000000,
+	0b0000000000000000,
+	0b0000000000000000,
+	0b0000000000000000,
+	0b0000000000000000 },
+{	0b0000000000000000,	//	block ID 3, beat 1
+	0b0000000000000000,
+	0b0000000000000000,
+	0b0000000000000000,
+	0b0000000000000000,
+	0b0000000000000000,
+	0b0000000000000000,
+	0b0000000000000000 }}
+#endif
 
 //---------------------------------------------------------
 //			Interrupt
@@ -213,10 +248,14 @@ static void changeLedPattern( uint8 ptn )
 {
 	int		i,j;
 
-	for( j=0; j<4; j++ ){
-		for( i=0; i<8; i++ ){
+	for ( i=0; i<MAX_BEAT; i++ ){
+		hcbLightPattern[i] = tLedPattern[ptn][0][i];
+	}
+	
+	for( j=1; j<MAX_ID; j++ ){
+		for( i=0; i<MAX_BEAT; i++ ){
 			uint16_t ledPtn = tLedPattern[ptn][j][i];
-			setMidiBuffer( 0xe0 | (j+1), (uint8)(ledPtn & 0x003f), (uint8)((ledPtn & 0x0fc0) >> 6) );			
+			setMidiBuffer( 0xe0 | j, (uint8)(ledPtn & 0x003f), (uint8)((ledPtn & 0x0fc0) >> 6) );			
 		}
 	}
 }
@@ -244,16 +283,13 @@ void tm32_init( void )
 	hcbLightPatternRcvMode = false;
 	hcbLightPatternRcvModeCounter = 0;
 	hcbLightPatternRcvTime = 0;
+	hcbLightPatternNum = 0;
+	hcbLightPatternChangeEvent = false;
 	beatOn = false;
 
-	hcbLightPattern[0] = tLedPattern[0][0][0];
-	hcbLightPattern[1] = tLedPattern[0][0][1];
-	hcbLightPattern[2] = tLedPattern[0][0][2];
-	hcbLightPattern[3] = tLedPattern[0][0][3];
-	hcbLightPattern[4] = tLedPattern[0][0][4];
-	hcbLightPattern[5] = tLedPattern[0][0][5];
-	hcbLightPattern[6] = tLedPattern[0][0][6];
-	hcbLightPattern[7] = tLedPattern[0][0][7];
+	for ( i=0; i<MAX_BEAT; i++ ){
+		hcbLightPattern[i] = tLedPattern[0][0][i];
+	}	
 	
 	for ( i=0; i<DOREMI_MAX; i++ ){
 		DLE_init(&dle[i]);
@@ -267,6 +303,9 @@ void tm32_init( void )
 	durationTimeForTempo = 500;
 	nextBeatCounter = 1000;
 	beatNumber = 0;
+
+	displayMode = 0;
+	displayNumber = durationTimeForTempo;
 	
 	for ( i=0; i<MAX_CELL; i++ ){
 		keyOnCounter[i] = 0;
@@ -283,7 +322,7 @@ void tm32_init( void )
 	//	Normal Block or not
 	hcbNormalBlock = true;
 	if ( tm32_p7_1() == 0 ){
-		ada88_write(18);
+		ada88_write(19);
 		
 		//	Start Terminal
 		hcbNormalBlock = false;
@@ -291,7 +330,7 @@ void tm32_init( void )
 		
 		// Light Pattern, Block Connection Pattern, -> setMidiBuffer();
 		setMidiBuffer( 0xb0, 0x52, 0x08 );
-		changeLedPattern(0);
+		hcbLightPatternChangeEvent = true;
 	}
 }
 //---------------------------------------------------------
@@ -371,8 +410,14 @@ void generateBeat( void )
 
 		//	Send Beat
 		setMidiBuffer( 0xb0, 0x53, beatNumber );
-		ada88_writeNumber( beatNumber );
+		displayNumber = durationTimeForTempo + beatNumber + 1;
+		ada88_writeNumber( displayNumber );
 
+		if ( hcbLightPatternChangeEvent == true ){
+			changeLedPattern(hcbLightPatternNum);
+			hcbLightPatternChangeEvent = false;
+		}
+		
 		beatNumber++;
 		if ( 8 <= beatNumber ){ beatNumber = 0; }
 		nextBeatCounter = tm32_systemTimer/4 + durationTimeForTempo;
@@ -514,8 +559,13 @@ void tm32_rcvUart( int count, uint8_t* buf )
 		switch ( *buf & 0xf0 ){
 			case 0x90:	//	fall through
 			case 0xa0:{
-				setMidiBuffer( *buf, *(buf+1), *(buf+2) );
-				break;	
+				if ( hcbNormalBlock == true ){
+					setMidiBuffer( *buf, *(buf+1), *(buf+2) );
+				}
+				else {
+					setUsbMidiBuffer( *buf, *(buf+1), *(buf+2) );		
+				}
+				break;
 			}
 			case 0xb0:{
 				if ( hcbNormalBlock == true ){
@@ -554,6 +604,32 @@ void tm32_rcvUart( int count, uint8_t* buf )
 //---------------------------------------------------------
 //			Touch On
 //---------------------------------------------------------
+void extraSw( int number )
+{
+	if ( hcbNormalBlock == true ){ return;}
+
+	if ( number == 1 ){
+		if ( durationTimeForTempo < 990 ){
+			durationTimeForTempo += 10;
+			displayNumber = (displayNumber % 10) + durationTimeForTempo;
+			ada88_writeNumber( displayNumber );
+		}
+	}
+	else if ( number == 2 ){
+		if ( durationTimeForTempo > 100 ){
+			durationTimeForTempo -= 10;
+			displayNumber = (displayNumber % 10) + durationTimeForTempo;
+			ada88_writeNumber( displayNumber );
+		}
+	}
+
+	if ( number == 0 ){
+		hcbLightPatternNum++;
+		hcbLightPatternNum &= 0x01;
+		hcbLightPatternChangeEvent = true;
+	}
+}
+//---------------------------------------------------------
 static const int tNode2Note[32] =
 {	2,2,5,5,8,8,11,11,1,1,4,4,7,7,10,10,-1,-1,-1,-1,-1,-1,-1,-1,9,9,6,6,3,3,0,0	};
 //---------------------------------------------------------
@@ -582,7 +658,10 @@ void tm32_touchOn( int number )
 	if (!( touchCurrentStatus & swEvent )){
 		if ( hcbActive == true ){
 			note = tNode2Note[number];
-			if (( note >= 12 ) || ( note < 0 )){ return; }
+			if (( note >= 12 ) || ( note < 0 )){
+				if ( note == -1 ){ extraSw(number-16);}
+				return;
+			}
 			
 			if ( keyOnCounter[note] == 0 ){ setKeyOn(note);}
 			else if ( keyOnCounter[note] == 1 ){

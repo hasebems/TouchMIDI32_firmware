@@ -30,7 +30,8 @@ extern void tm32_rcvUart( int count, uint8_t* buf );
 //	UART MIDI Tx
 #define		UART_MIDI_TX_NO_USE			0
 #define		UART_MIDI_TX_SAME_AS_USBOUT	1
-#define		UART_MIDI_TX				UART_MIDI_TX_SAME_AS_USBOUT
+#define		UART_MIDI_TX_TO_MAIN_APP	2
+#define		UART_MIDI_TX				UART_MIDI_TX_TO_MAIN_APP
 
 //---------------------------------------------------------
 //		I2C Device Configuration
