@@ -69,6 +69,8 @@
 #include "Pin_3_aliases.h"
 #include "Pin_4.h"
 #include "Pin_4_aliases.h"
+#include "RST_N.h"
+#include "RST_N_aliases.h"
 #include "CapSense_ISR.h"
 #include "I2C_SCBCLK.h"
 #include "I2C_sda.h"

@@ -275,6 +275,10 @@
           <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\SPI_ss0_m.h</File>
           <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\SPI_ss0_m_aliases.h</File>
           <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\SPI_ss0_m_PM.c</File>
+          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\RST_N.c</File>
+          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\RST_N.h</File>
+          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\RST_N_aliases.h</File>
+          <File BuildType="BUILD" Toolchain="">Generated_Source\PSoC4\RST_N_PM.c</File>
         </Files>
       </Folder>
       <Folder BuildType="STRICT" Path="C:\Users\Masahiko\Documents\PSoC Creator\TouchMIDI32_firmware\fmboard.cydsn\Export\ARM_GCC_Generic\CapSense_P4_v3_10">
