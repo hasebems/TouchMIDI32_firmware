@@ -66,7 +66,7 @@ static const uint8 TOUCH_EVENT_TABLE[MAX_TOUCH_PADS][2] =
 	{ KBD_SW, 0x4c }, { KBD_SW, 0x4d }, { KBD_SW, 0x4e }, { KBD_SW, 0x4f },
 	{ KBD_SW, 0x50 }, { KBD_SW, 0x51 }, { KBD_SW, 0x52 }, { KBD_SW, 0x53 }
 };
-static const uint8 VELCITY_TABLE[5] = { 60, 80, 100, 114, 127 };
+static const uint8 VELCITY_TABLE[5] = { 32, 64, 84, 106, 127 };
 
 //---------------------------------------------------------
 //			Initialize
