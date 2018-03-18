@@ -100,7 +100,7 @@ void initSD1( void )
 	//	14.	AP2: "0"
 	writeSingle(2, 0x00);
 
-	writeSingle(25, 0x9c);	//	-12[dB]
+	writeSingle(25, 0xcc);	//	0[dB]
 	writeSingle(27, 0x3f);	//	set itp max
 	writeSingle(20, 0x00);	//	set itp on
 	writeSingle(3, 0x01);	//	amp gain(6.5[dB])

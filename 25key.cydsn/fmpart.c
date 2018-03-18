@@ -12,7 +12,7 @@ static Note* getNote(Part* _this);
 unsigned char Part_cc1(Part* _this){ return _this->_cc1; }
 unsigned char Part_cc7(Part* _this){ return _this->_cc7; }
 unsigned short Part_pb(Part* _this){ return _this->_pbvalue; }
-unsigned char Part_toneNumber(Part* _this){ return _this->_toneNumber; }
+unsigned char Part_toneNumber(Part* _this){ return _this->_toneNumber & 0x0f; }
 
 void Part_init( Part* _this )
 {
