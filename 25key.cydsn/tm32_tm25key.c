@@ -54,17 +54,17 @@ static int		debugCounter;
 //---------------------------------------------------------
 static const uint8 TOUCH_EVENT_TABLE[MAX_TOUCH_PADS][2] =
 {
-	{ KBD_SW, 0x54 }, { OCT_SW, 0xff }, { EFF_SW, 0x01 }, { PCN_SW, 0xff },
+	{ KBD_SW, 0x48 }, { OCT_SW, 0xff }, { EFF_SW, 0x01 }, { PCN_SW, 0xff },
 	{ PCN_SW, 0x01 }, { VEL_SW, 0xff }, { VEL_SW, 0x01 }, { OCT_SW, 0x01 },
 
+	{ KBD_SW, 0x30 }, { KBD_SW, 0x31 }, { KBD_SW, 0x32 }, { KBD_SW, 0x33 },
+	{ KBD_SW, 0x34 }, { KBD_SW, 0x35 }, { KBD_SW, 0x36 }, { KBD_SW, 0x37 },
+	
+	{ KBD_SW, 0x38 }, { KBD_SW, 0x39 }, { KBD_SW, 0x3a }, { KBD_SW, 0x3b },
 	{ KBD_SW, 0x3c }, { KBD_SW, 0x3d }, { KBD_SW, 0x3e }, { KBD_SW, 0x3f },
+	
 	{ KBD_SW, 0x40 }, { KBD_SW, 0x41 }, { KBD_SW, 0x42 }, { KBD_SW, 0x43 },
-	
-	{ KBD_SW, 0x44 }, { KBD_SW, 0x45 }, { KBD_SW, 0x46 }, { KBD_SW, 0x47 },
-	{ KBD_SW, 0x48 }, { KBD_SW, 0x49 }, { KBD_SW, 0x4a }, { KBD_SW, 0x4b },
-	
-	{ KBD_SW, 0x4c }, { KBD_SW, 0x4d }, { KBD_SW, 0x4e }, { KBD_SW, 0x4f },
-	{ KBD_SW, 0x50 }, { KBD_SW, 0x51 }, { KBD_SW, 0x52 }, { KBD_SW, 0x53 }
+	{ KBD_SW, 0x44 }, { KBD_SW, 0x45 }, { KBD_SW, 0x46 }, { KBD_SW, 0x47 }
 };
 static const uint8 VELCITY_TABLE[5] = { 32, 64, 84, 106, 127 };
 
@@ -95,7 +95,7 @@ void tm32_init( void )
 	pcNumber = 0;
 
 	//	Power On
-	tm32_p6_4_Hi();
+	tm32_p6_3_Hi();
 }
 //---------------------------------------------------------
 //			Loop
@@ -111,7 +111,7 @@ void tm32_loop( void )
 	}
 	if ( sentSignalTime+20 <= tm32_systemTimer ){
 		//	MIDI out Indicator
-		tm32_p6_3_Lo();
+		tm32_p6_4_Lo();
 	}
 }
 //---------------------------------------------------------
@@ -126,7 +126,7 @@ void IncDebCnt( void )
 void MIDIOutIndicator( void )
 {
 	sentSignalTime = tm32_systemTimer;
-	tm32_p6_3_Hi();
+	tm32_p6_4_Hi();
 }
 //---------------------------------------------------------
 void tm32_touchOn( int number )
